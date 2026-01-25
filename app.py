@@ -206,25 +206,43 @@ def admin_dashboard():
     completed_orders = Order.query.filter_by(status='Completed').count()
     cancelled_orders = Order.query.filter_by(status='Cancelled').count()
     
-    # Calculate revenue
-    revenue = 0.0
-    for o in db_orders:
-        total_str = str(o.total).replace('Rs.', '').replace('$', '')
-        try:
-            revenue += float(total_str)
-        except ValueError:
-            pass
+    # Daily Analytics (Today's Stats)
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    today_orders = Order.query.filter(db.func.date(Order.timestamp) == today_str).all()
+    
+    today_revenue = 0.0
+    daily_items_sold = {}
+    
+    for o in today_orders:
+        # Calculate revenue (exclude cancelled)
+        if o.status != 'Cancelled':
+            total_str = str(o.total).replace('Rs.', '').replace('$', '')
+            try:
+                today_revenue += float(total_str)
+            except ValueError:
+                pass
             
+            # Aggregate items sold today
+            for item in o.items:
+                qty = getattr(item, 'quantity', 1) or 1
+                daily_items_sold[item.name] = daily_items_sold.get(item.name, 0) + qty
+
+    # Sort daily items by quantity
+    top_selling_today = sorted(daily_items_sold.items(), key=lambda x: x[1], reverse=True)
+    
     # Format for template
     formatted_orders = []
     for o in db_orders:
         formatted_orders.append({
             'id': o.id,
-            'timestamp': o.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            'timestamp': o.timestamp.strftime("%Y-%m-%d %H:%M:%S") if o.timestamp else "N/A",
             'items': [{'name': i.name, 'price': i.price, 'qty': getattr(i, 'quantity', 1)} for i in o.items],
             'total': o.total,
             'status': o.status
         })
+
+    # Get feedback from database
+    db_feedbacks = Feedback.query.order_by(Feedback.timestamp.desc()).all()
 
     return render_template('admin_dashboard.html', 
                          orders=formatted_orders, 
@@ -234,7 +252,9 @@ def admin_dashboard():
                          processing_orders=processing_orders,
                          completed_orders=completed_orders,
                          cancelled_orders=cancelled_orders,
-                         revenue=f"Rs.{revenue:.2f}")
+                         revenue=f"Rs.{today_revenue:.2f}",
+                         top_selling_today=top_selling_today,
+                         feedbacks=db_feedbacks)
 
 @app.route('/admin/order/update-status', methods=['POST'])
 def update_order_status():
