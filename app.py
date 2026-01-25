@@ -258,7 +258,7 @@ def order():
     new_order = Order(
         customer_name=customer.get('name', 'Guest'),
         customer_phone=customer.get('phone', 'N/A'),
-        total=total or "$0.00",
+        total=total or "Rs.0.00",
         user_id=user_id
     )
     db.session.add(new_order)
@@ -277,7 +277,7 @@ def order():
             order_item = OrderItem(
                 order_id=new_order.id,
                 name=item['name'],
-                price=float(str(item['price']).replace('$', ''))
+                price=float(str(item['price']).replace('Rs.', '').replace('$', ''))
             )
             db.session.add(order_item)
     else:
@@ -292,7 +292,7 @@ def order():
             else:
                 print(f"WARNING: {prod.name} is out of stock!")
 
-        item_price = data.get('price', '$0.00').replace('$', '')
+        item_price = data.get('price', 'Rs.0.00').replace('Rs.', '').replace('$', '')
         order_item = OrderItem(
             order_id=new_order.id,
             name=item_name,
