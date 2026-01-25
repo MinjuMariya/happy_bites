@@ -27,10 +27,21 @@ class Order(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     customer_name = db.Column(db.String(100), nullable=False)
     customer_phone = db.Column(db.String(20), nullable=False)
+    customer_address = db.Column(db.Text, nullable=True) # Added address field
     total = db.Column(db.String(20), nullable=False)
     status = db.Column(db.String(20), default='Pending')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     items = db.relationship('OrderItem', backref='order', lazy=True)
+
+class StoreSettings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    address = db.Column(db.Text, nullable=False, default='123 Bakery Street, Food Town, FL 32000')
+    phone = db.Column(db.String(20), nullable=False, default='+1 (555) 123-4567')
+    email = db.Column(db.String(120), nullable=False, default='hello@happybites.com')
+    instagram = db.Column(db.String(255), nullable=True)
+    facebook = db.Column(db.String(255), nullable=True)
+    twitter = db.Column(db.String(255), nullable=True)
+    whatsapp = db.Column(db.String(20), nullable=True)
 
 class OrderItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -60,6 +71,11 @@ admin_credentials = {
 }
 
 def seed_products():
+    if StoreSettings.query.count() == 0:
+        settings = StoreSettings()
+        db.session.add(settings)
+        db.session.commit()
+
     if Product.query.count() == 0:
         default_products = [
             {'name': 'Crispy Samosa', 'price': 15.00, 'category': 'snacks', 'image_url': 'static/assets/images/SAMOSA.jpg', 'stock': 20},
@@ -85,6 +101,15 @@ def seed_products():
 with app.app_context():
     db.create_all()
     seed_products()
+
+@app.context_processor
+def inject_settings():
+    settings = StoreSettings.query.first()
+    if not settings:
+        settings = StoreSettings()
+        db.session.add(settings)
+        db.session.commit()
+    return dict(store_settings=settings)
 
 @app.route('/')
 def home():
@@ -233,30 +258,57 @@ def admin_settings():
         
     error = None
     success = None
+    settings = StoreSettings.query.first()
     
     if request.method == 'POST':
-        current_user = request.form.get('current_username')
-        current_pass = request.form.get('current_password')
-        new_user = request.form.get('new_username')
-        new_pass = request.form.get('new_password')
+        action = request.form.get('action')
         
-        if (current_user == admin_credentials['username'] and 
-            current_pass == admin_credentials['password']):
+        if action == 'update_credentials':
+            current_user = request.form.get('current_username')
+            current_pass = request.form.get('current_password')
+            new_user = request.form.get('new_username')
+            new_pass = request.form.get('new_password')
             
-            if new_user and new_pass:
-                admin_credentials['username'] = new_user
-                admin_credentials['password'] = new_pass
-                session['admin_username'] = new_user
-                success = "Credentials updated successfully!"
+            if (current_user == admin_credentials['username'] and 
+                current_pass == admin_credentials['password']):
+                
+                if new_user and new_pass:
+                    admin_credentials['username'] = new_user
+                    admin_credentials['password'] = new_pass
+                    session['admin_username'] = new_user
+                    success = "Credentials updated successfully!"
+                else:
+                    error = "New username and password cannot be empty."
             else:
-                error = "New username and password cannot be empty."
-        else:
-            error = "Current credentials invalid."
+                error = "Current credentials invalid."
+        
+        elif action == 'update_store_info':
+            new_address = request.form.get('address')
+            new_phone = request.form.get('phone')
+            new_email = request.form.get('email')
+            new_insta = request.form.get('instagram')
+            new_fb = request.form.get('facebook')
+            new_twitter = request.form.get('twitter')
+            new_whatsapp = request.form.get('whatsapp')
+            
+            if settings:
+                settings.address = new_address
+                settings.phone = new_phone
+                settings.email = new_email
+                settings.instagram = new_insta
+                settings.facebook = new_fb
+                settings.twitter = new_twitter
+                settings.whatsapp = new_whatsapp
+                db.session.commit()
+                success = "Store information updated successfully!"
+            else:
+                error = "Store settings not found."
             
     return render_template('admin_settings.html', 
                          username=session.get('admin_username', 'admin'),
                          error=error,
-                         success=success)
+                         success=success,
+                         store_settings=settings)
 
 @app.route('/admin/logout')
 def admin_logout():
@@ -273,22 +325,25 @@ def contact():
 
 @app.route('/api/order', methods=['POST'])
 def order():
+    if not session.get('user_logged_in'):
+        return jsonify({"status": "error", "message": "Please login to place an order"}), 401
+        
     data = request.get_json()
     items = data.get('items')
     total = data.get('total')
-    customer = data.get('customer', {})
+    customer_data = data.get('customer', {})
     
-    user_id = None
-    if session.get('user_logged_in'):
-        user = User.query.filter_by(username=session['username']).first()
-        if user:
-            user_id = user.id
+    # Get user details from session/db
+    user = User.query.filter_by(username=session['username']).first()
+    if not user:
+        return jsonify({"status": "error", "message": "User not found"}), 404
 
     new_order = Order(
-        customer_name=customer.get('name', 'Guest'),
-        customer_phone=customer.get('phone', 'N/A'),
+        customer_name=user.full_name,
+        customer_phone=user.phone,
+        customer_address=customer_data.get('address', user.address), # Use provided address or profile default
         total=total or "Rs.0.00",
-        user_id=user_id
+        user_id=user.id
     )
     db.session.add(new_order)
     db.session.flush() # Get the order ID
@@ -306,34 +361,22 @@ def order():
                     prod.remaining_stock = 0
                     print(f"WARNING: {prod.name} only had {qty_available} left!")
             
+            # Extract price safely
+            item_price = 0.0
+            try:
+                price_str = str(item.get('price', '0')).replace('Rs.', '').replace('$', '').replace(',', '').strip()
+                item_price = float(price_str)
+            except (ValueError, TypeError):
+                pass
+
             order_item = OrderItem(
                 order_id=new_order.id,
                 name=item['name'],
-                price=float(str(item['price']).replace('Rs.', '').replace('$', '')),
+                price=item_price,
                 quantity=qty
             )
             db.session.add(order_item)
-    else:
-        # Fallback for old calls
-        item_name = data.get('item', 'Unknown')
-        
-        # Update Stock
-        prod = Product.query.filter_by(name=item_name).first()
-        if prod:
-            if prod.remaining_stock >= 1:
-                prod.remaining_stock -= 1
-            else:
-                print(f"WARNING: {prod.name} is out of stock!")
-
-        item_price = data.get('price', 'Rs.0.00').replace('Rs.', '').replace('$', '')
-        order_item = OrderItem(
-            order_id=new_order.id,
-            name=item_name,
-            price=float(item_price) if item_price else 0.0,
-            quantity=1
-        )
-        db.session.add(order_item)
-
+    
     db.session.commit()
     return jsonify({"status": "success", "message": "Order placed successfully!"})
 

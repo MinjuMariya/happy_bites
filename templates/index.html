@@ -15,6 +15,7 @@
         rel="stylesheet">
 
     <!-- Styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
@@ -153,6 +154,29 @@
             <div class="footer-brand">
                 <h3>Happy Bites</h3>
                 <p>Spreading joy, one bite at a time.</p>
+                <div class="social-links">
+                    {% if store_settings.instagram %}
+                    <a href="{{ store_settings.instagram }}" target="_blank" class="social-icon" title="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    {% endif %}
+                    {% if store_settings.facebook %}
+                    <a href="{{ store_settings.facebook }}" target="_blank" class="social-icon" title="Facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    {% endif %}
+                    {% if store_settings.twitter %}
+                    <a href="{{ store_settings.twitter }}" target="_blank" class="social-icon" title="Twitter">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    {% endif %}
+                    {% if store_settings.whatsapp %}
+                    <a href="https://wa.me/{{ store_settings.whatsapp|replace(' ', '')|replace('+', '') }}"
+                        target="_blank" class="social-icon" title="WhatsApp">
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             <div class="footer-links">
                 <h4>Quick Links</h4>
@@ -162,9 +186,9 @@
             </div>
             <div class="footer-contact">
                 <h4>Visit Us</h4>
-                <p>123 Bakery Street, Food Town, FL 32000</p>
-                <p>hello@happybites.com</p>
-                <p>+1 (555) 123-4567</p>
+                <p>{{ store_settings.address }}</p>
+                <p>{{ store_settings.email }}</p>
+                <p>{{ store_settings.phone }}</p>
             </div>
             <div class="footer-newsletter">
                 <h4>Feedback & Rating</h4>
@@ -205,17 +229,31 @@
             <div class="empty-cart-msg">Your cart is empty.</div>
         </div>
         <div class="cart-footer">
+            {% if session.user_logged_in %}
             <div class="cart-customer-details">
-                <input type="text" id="cart-name" placeholder="Your Name" class="cart-input"
-                    value="{{ session.full_name if session.user_logged_in else '' }}">
-                <input type="tel" id="cart-phone" placeholder="Phone Number" class="cart-input"
-                    value="{{ session.phone if session.user_logged_in else '' }}">
+                <p style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-light);">Delivering to:</p>
+                <input type="text" id="cart-address" placeholder="Delivery Address" class="cart-input"
+                    value="{{ session.address if session.address else '' }}">
             </div>
             <div class="cart-total">
                 <span>Total:</span>
                 <span class="total-amount">Rs.0.00</span>
             </div>
             <button class="btn btn-primary checkout-btn" disabled>Checkout</button>
+            {% else %}
+            <div class="cart-login-prompt"
+                style="text-align: center; padding: 1rem; background: var(--secondary); border-radius: var(--radius); margin-bottom: 1rem;">
+                <p style="margin-bottom: 1rem; color: var(--text-dark);">Please login to place an order</p>
+                <a href="/login" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">Login / Sign
+                    Up</a>
+            </div>
+            <div class="cart-total">
+                <span>Total:</span>
+                <span class="total-amount">Rs.0.00</span>
+            </div>
+            <button class="btn btn-primary checkout-btn" disabled style="opacity: 0.5; cursor: not-allowed;">Checkout
+                Restricted</button>
+            {% endif %}
         </div>
     </div>
     <div id="order-success-modal" class="custom-modal">
@@ -225,6 +263,16 @@
             <p>Thank you for ordering from Happy Bites.</p>
             <p class="modal-subtext">We'll get started on your delicious treats right away.</p>
             <button class="btn btn-primary" id="close-modal-btn">Continue Shopping</button>
+        </div>
+    </div>
+
+    <div id="feedback-success-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="modal-icon">🧡</div>
+            <h2>Thank You!</h2>
+            <p>We appreciate your valuable feedback.</p>
+            <p class="modal-subtext">It helps us make Happy Bites even better for you.</p>
+            <button class="btn btn-primary" id="close-feedback-modal">Close</button>
         </div>
     </div>
     <div class="cart-overlay"></div>
