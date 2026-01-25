@@ -114,7 +114,14 @@ def inject_settings():
 @app.route('/')
 def home():
     featured_products = Product.query.limit(4).all()
-    return render_template('index.html', products=featured_products)
+    # Fetch top 5 recent feedbacks for landing page
+    recent_feedbacks = Feedback.query.order_by(Feedback.timestamp.desc()).limit(5).all()
+    return render_template('index.html', products=featured_products, testimonials=recent_feedbacks)
+
+@app.route('/feedbacks')
+def all_feedbacks():
+    feedbacks = Feedback.query.order_by(Feedback.timestamp.desc()).all()
+    return render_template('feedbacks.html', feedbacks=feedbacks)
 
 @app.route('/menu')
 def menu_page():

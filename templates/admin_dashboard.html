@@ -208,6 +208,42 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Customer Feedback Section -->
+                <div class="orders-section" style="margin-top: 3rem;">
+                    <h2>Customer Feedback</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rating</th>
+                                    <th>Message</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feedback in feedbacks %}
+                                <tr>
+                                    <td>
+                                        <div style="color: var(--primary); font-size: 1.1rem;">
+                                            {% for i in range(feedback.rating) %}★{% endfor %}
+                                            {% for i in range(5 - feedback.rating) %}<span
+                                                style="color: #ccc;">★</span>{% endfor %}
+                                        </div>
+                                    </td>
+                                    <td style="font-style: italic; color: #555;">"{{ feedback.message }}"</td>
+                                    <td style="font-size: 0.9rem; color: #888;">{{ feedback.timestamp.strftime('%Y-%m-%d
+                                        %H:%M') }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No feedback received yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
