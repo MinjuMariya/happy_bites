@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Happy Bites</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+
+<body>
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h2>Happy Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin" class="active">📦 <span>Orders</span></a>
+                <a href="/admin/users">👥 <span>Users</span></a>
+                <a href="/admin/products">🥐 <span>Products</span></a>
+                <a href="/admin/reports">📈 <span>Reports</span></a>
+                <a href="/admin/settings">⚙️ <span>Settings</span></a>
+                <a href="/" target="_blank">🔗 <span>View Site</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/admin/logout">Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <h1>Orders Dashboard</h1>
+                <div class="user-info">
+                    <span>{{ username }}</span>
+                    <a href="/admin/logout"
+                        style="margin-left: 10px; color: #ff6b6b; font-size: 0.9em; text-decoration: none;">Logout ➔</a>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="stats-cards">
+                    <div class="card">
+                        <h3>Total Orders</h3>
+                        <p class="stat-number">{{ total_orders }}</p>
+                    </div>
+                    <div class="card">
+                        <h3>Pending</h3>
+                        <p class="stat-number">{{ pending_orders }}</p>
+                    </div>
+                    <div class="card">
+                        <h3>Today's Revenue</h3>
+                        <p class="stat-number">{{ revenue }}</p>
+                    </div>
+                </div>
+
+                <div class="orders-section">
+                    <h2>Recent Orders</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>#{{ order['id'] }}</td>
+                                    <td>{{ order['timestamp'] }}</td>
+                                    <td>
+                                        <ul class="order-items-list">
+                                            {% for item in order['items'] %}
+                                            <li>{{ item['name'] }} (${{ item['price'] }})</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td class="amount">{{ order['total'] }}</td>
+                                    <td><span class="status-badge {{ order['status']|lower }}">{{ order['status']
+                                            }}</span>
+                                    </td>
+                                    <td><button class="btn-sm">View</button></td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No orders found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Happy Bites | Premium Bakery & Snacks</title>
+    <meta name="description" content="Experience the joy of Happy Bites. Delicious snacks, premium pastries, and more.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container nav-container">
+            <a href="#" class="logo">
+                <img src="static/assets/images/logo.jpeg" alt="Happy Bites Logo" class="logo-img">
+                <span class="logo-text">Happy Bites</span>
+            </a>
+            <button class="mobile-menu-btn" aria-label="Toggle Menu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+            <ul class="nav-links">
+                <li><a href="#home" class="nav-link active">Home</a></li>
+                <li><a href="#menu" class="nav-link">Menu</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+                <li><a href="#contact" class="nav-link">Contact Us</a></li>
+                {% if session.user_logged_in %}
+                <li><a href="#" class="nav-link" style="color: var(--primary);">Hi, {{ session.full_name.split()[0]
+                        }}</a></li>
+                <li><a href="/logout" class="nav-link">Logout</a></li>
+                {% else %}
+                <li><a href="/login" class="nav-link">Login</a></li>
+                {% endif %}
+                <li class="cart-item">
+                    <button class="cart-btn" aria-label="View Cart">
+                        <span class="cart-icon">🛒</span>
+                        <span class="cart-count">0</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="home" class="hero">
+        <div class="hero-bg">
+            <img src="static/assets/images/cookies.jpg" alt="Delicious Cookies" class="hero-video">
+            <div class="overlay"></div>
+        </div>
+        <div class="container hero-content">
+            <h1 class="hero-title">Taste the <span class="highlight">Happiness</span></h1>
+            <p class="hero-subtitle">Premium bakery treats and authentic snacks made with love.</p>
+            <div class="hero-buttons">
+                <a href="/menu" class="btn btn-primary">View Menu</a>
+                <a href="#menu" class="btn btn-secondary">Order Now</a>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <span>Scroll</span>
+            <div class="mouse"></div>
+        </div>
+    </header>
+
+    <!-- Featured Menu Section -->
+    <section id="menu" class="section menu-section">
+        <div class="container">
+            <div class="section-header text-center">
+                <h2 class="section-title">Our Favorites</h2>
+                <p class="section-desc">Handpicked daily specials just for you.</p>
+            </div>
+
+            <div class="menu-grid">
+                {% for product in products %}
+                <article class="menu-card" data-category="{{ product.category }}">
+                    <div class="card-image">
+                        <img src="/{{ product.image_url }}" alt="{{ product.name }}">
+                        {% if product.remaining_stock == 0 %}
+                        <div class="stock-overlay out-of-stock">OUT OF STOCK</div>
+                        {% elif product.remaining_stock < 5 %} <div class="stock-overlay few-left">FEW LEFT!
+                    </div>
+                    {% endif %}
+            </div>
+            <div class="card-content">
+                <h3>{{ product.name }}</h3>
+                <p>{{ product.category|capitalize }} selection</p>
+                <div class="card-footer">
+                    <span class="price">Rs.{{ "%.2f"|format(product.price) }}</span>
+                    {% if product.remaining_stock > 0 %}
+                    <button class="btn-add">Add +</button>
+                    {% else %}
+                    <button class="btn-add disabled" disabled style="background: #ccc; cursor: not-allowed;">Add
+                        +</button>
+                    {% endif %}
+                </div>
+            </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <div class="center-btn">
+            <a href="/menu" class="btn btn-outline">View Full Menu</a>
+        </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section about-section">
+        <div class="container about-grid">
+            <div class="about-image">
+                <div class="image-stack">
+                    <img src="static/assets/images/UNNAKAYA.jpg" alt="Unnakaya" class="img-1">
+                    <img src="static/assets/images/salad.webp" alt="Salad" class="img-2">
+                </div>
+            </div>
+            <div class="about-content">
+                <h2 class="section-title">Crafted with Passion</h2>
+                <p>At Happy Bites, we believe in the magic of fresh ingredients and traditional recipes. Whether it's a
+                    crispy snack or a sweet indulgence, every bite is a promise of happiness.</p>
+                <ul class="features-list">
+                    <li>✨ Freshly Baked Daily</li>
+                    <li>🌿 Organic Ingredients</li>
+                    <li>🧡 Made with Love</li>
+                </ul>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="site-footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Happy Bites</h3>
+                <p>Spreading joy, one bite at a time.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <a href="#home">Home</a>
+                <a href="#menu">Menu</a>
+                <a href="#about">About</a>
+            </div>
+            <div class="footer-contact">
+                <h4>Visit Us</h4>
+                <p>123 Bakery Street, Food Town, FL 32000</p>
+                <p>hello@happybites.com</p>
+                <p>+1 (555) 123-4567</p>
+            </div>
+            <div class="footer-newsletter">
+                <h4>Feedback & Rating</h4>
+                <form class="feedback-form" id="feedbackForm">
+                    <div class="star-rating">
+                        <input type="radio" id="star5" name="rating" value="5" /><label for="star5"
+                            title="5 stars">★</label>
+                        <input type="radio" id="star4" name="rating" value="4" /><label for="star4"
+                            title="4 stars">★</label>
+                        <input type="radio" id="star3" name="rating" value="3" /><label for="star3"
+                            title="3 stars">★</label>
+                        <input type="radio" id="star2" name="rating" value="2" /><label for="star2"
+                            title="2 stars">★</label>
+                        <input type="radio" id="star1" name="rating" value="1" /><label for="star1"
+                            title="1 star">★</label>
+                    </div>
+                    <div class="feedback-input-group">
+                        <input type="text" id="feedbackMsg" placeholder="Your feedback..." required>
+                        <button type="submit">Send</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="footer-bottom text-center">
+            <p>&copy; 2026 Happy Bites. All rights reserved. | <a href="/admin"
+                    style="color: inherit; text-decoration: underline;">Admin Login</a></p>
+        </div>
+    </footer>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>Your Cart</h3>
+            <button class="close-cart">&times;</button>
+        </div>
+        <div class="cart-items">
+            <!-- Items will be injected here -->
+            <div class="empty-cart-msg">Your cart is empty.</div>
+        </div>
+        <div class="cart-footer">
+            <div class="cart-customer-details">
+                <input type="text" id="cart-name" placeholder="Your Name" class="cart-input"
+                    value="{{ session.full_name if session.user_logged_in else '' }}">
+                <input type="tel" id="cart-phone" placeholder="Phone Number" class="cart-input"
+                    value="{{ session.phone if session.user_logged_in else '' }}">
+            </div>
+            <div class="cart-total">
+                <span>Total:</span>
+                <span class="total-amount">$0.00</span>
+            </div>
+            <button class="btn btn-primary checkout-btn" disabled>Checkout</button>
+        </div>
+    </div>
+    <div id="order-success-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="modal-icon">🎉</div>
+            <h2>Order Placed!</h2>
+            <p>Thank you for ordering from Happy Bites.</p>
+            <p class="modal-subtext">We'll get started on your delicious treats right away.</p>
+            <button class="btn btn-primary" id="close-modal-btn">Continue Shopping</button>
+        </div>
+    </div>
+    <div class="cart-overlay"></div>
+
+    <script src="/static/script.js"></script>
+</body>
+
+</html>

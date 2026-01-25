@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Happy Bites</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+
+<body>
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h2>Happy Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin">📦 <span>Orders</span></a>
+                <a href="/admin/users">👥 <span>Users</span></a>
+                <a href="/admin/products">🥐 <span>Products</span></a>
+                <a href="/admin/reports">📈 <span>Reports</span></a>
+                <a href="/admin/settings" class="active">⚙️ <span>Settings</span></a>
+                <a href="/" target="_blank">🔗 <span>View Site</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/admin/logout">Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <h1>Settings</h1>
+                <div class="user-info">
+                    <span>{{ username }}</span>
+                    <a href="/admin/logout"
+                        style="margin-left: 10px; color: #ff6b6b; font-size: 0.9em; text-decoration: none;">Logout ➔</a>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="orders-section" style="max-width: 600px; margin: 0 auto; animation: fadeIn 0.5s ease;">
+                    <h2>Change Admin Credentials</h2>
+
+                    {% if error %}
+                    <div class="error-msg">{{ error }}</div>
+                    {% endif %}
+
+                    {% if success %}
+                    <div class="success-msg">
+                        {{ success }}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST">
+                        <div class="form-group">
+                            <label>Current Credentials</label>
+                            <input type="text" name="current_username" placeholder="Current Username" required
+                                style="margin-bottom: 10px;">
+                            <input type="password" name="current_password" placeholder="Current Password" required>
+                        </div>
+
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+                        <div class="form-group">
+                            <label>New Credentials</label>
+                            <input type="text" name="new_username" placeholder="New Username" required
+                                style="margin-bottom: 10px;">
+                            <input type="password" name="new_password" placeholder="New Password" required>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Update
+                            Credentials</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

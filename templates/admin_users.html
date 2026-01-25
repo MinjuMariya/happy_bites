@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users | Happy Admin</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+
+<body>
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h2>Happy Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin">📦 <span>Orders</span></a>
+                <a href="/admin/users" class="active">👥 <span>Users</span></a>
+                <a href="/admin/products">🥐 <span>Products</span></a>
+                <a href="/admin/reports">📈 <span>Reports</span></a>
+                <a href="/admin/settings">⚙️ <span>Settings</span></a>
+                <a href="/" target="_blank">🔗 <span>View Site</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/admin/logout">Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <h1>Registered Users</h1>
+                <div class="user-info">
+                    <span>{{ username }}</span>
+                    <a href="/admin/logout"
+                        style="margin-left: 10px; color: #ff6b6b; font-size: 0.9em; text-decoration: none;">Logout ➔</a>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="orders-section">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Contact Info</th>
+                                    <th>Address</th>
+                                    <th>Orders Placed</th>
+                                    <th>Last Active</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: bold;">{{ user['name'] }}</div>
+                                    </td>
+                                    <td>
+                                        <div style="font-size: 0.9em; color: var(--text-muted);">{{ user['email'] }}
+                                        </div>
+                                        <div style="font-size: 1.1em; color: var(--primary-dark); font-weight: 600;">{{
+                                            user['phone'] }}</div>
+                                    </td>
+                                    <td style="font-size: 0.9em; max-width: 200px;">{{ user['address'] }}</td>
+                                    <td>{{ user['orders_count'] }}</td>
+                                    <td style="font-size: 0.9em;">{{ user['last_order'] }}</td>
+                                    <td><button class="btn-sm">View History</button></td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No users found yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
