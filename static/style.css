@@ -508,6 +508,63 @@ img {
     background: var(--primary);
 }
 
+.qty-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    background: var(--light-bg);
+    padding: 0.3rem;
+    border-radius: 20px;
+    width: fit-content;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.qty-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: var(--white);
+    color: var(--text-dark);
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.qty-btn:hover {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.qty-input {
+    width: 30px;
+    text-align: center;
+    border: none;
+    background: transparent;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    outline: none;
+}
+
+/* Hide arrow for chrome/safari/opera */
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Hide arrow for firefox */
+.qty-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
 .center-btn {
     text-align: center;
 }
@@ -859,9 +916,56 @@ img {
     margin-bottom: 0.2rem;
 }
 
+.cart-item-details {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.cart-qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: var(--light-bg);
+    padding: 0.2rem 0.5rem;
+    border-radius: 15px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.cart-qty-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: var(--white);
+    color: var(--primary-dark);
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.cart-qty-btn:hover {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.cart-item-qty {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    min-width: 15px;
+    text-align: center;
+}
+
 .cart-item-price {
     color: var(--primary);
     font-weight: bold;
+    font-size: 0.95rem;
 }
 
 .remove-item {

@@ -70,7 +70,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartCountElement = document.querySelector('.cart-count');
     const checkoutBtn = document.querySelector('.checkout-btn');
 
-    let cart = JSON.parse(localStorage.getItem('happyBitesCart')) || [];
+    let cart = [];
+    try {
+        const storedCart = localStorage.getItem('happyBitesCart');
+        cart = storedCart ? JSON.parse(storedCart) : [];
+        if (!Array.isArray(cart)) cart = [];
+
+        // migration/safety: ensure all items have a number price
+        cart = cart.map(item => {
+            let price = item.price;
+            if (typeof price === 'string') {
+                price = parseFloat(price.replace(/[^\d.-]/g, ''));
+            }
+            return {
+                ...item,
+                price: isNaN(price) ? 0 : price
+            };
+        });
+    } catch (e) {
+        console.error("Cart loading error:", e);
+        cart = [];
+    }
 
     // Initialize cart
     updateCartUI();
@@ -85,50 +105,117 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeCartBtn) closeCartBtn.addEventListener('click', toggleCart);
     if (cartOverlay) cartOverlay.addEventListener('click', toggleCart);
 
-    // Add to Cart
-    const addBtns = document.querySelectorAll('.btn-add');
+    // Quantity Controls Logic (Menu + Cart)
+    document.addEventListener('click', (e) => {
+        // Menu item qty selection
+        if (e.target.classList.contains('qty-btn')) {
+            const control = e.target.closest('.qty-control');
+            if (!control) return;
+            const input = control.querySelector('.qty-input');
+            if (!input) return;
+            let val = parseInt(input.value) || 1;
 
-    addBtns.forEach(btn => {
-        btn.addEventListener('click', function () {
-            const card = this.closest('.menu-card');
-            const itemName = card.querySelector('h3').innerText;
-            const priceStr = card.querySelector('.price').innerText;
-            const price = parseFloat(priceStr.replace('$', ''));
+            if (e.target.classList.contains('plus')) {
+                val++;
+            } else if (e.target.classList.contains('minus')) {
+                if (val > 1) val--;
+            }
 
-            const item = {
-                id: Date.now(),
-                name: itemName,
-                price: price
-            };
+            input.value = val;
+            e.preventDefault();
+        }
 
-            cart.push(item);
-            saveCart();
-            updateCartUI();
+        // Cart quantity adjustment
+        if (e.target.classList.contains('cart-qty-btn')) {
+            const id = parseFloat(e.target.dataset.id);
+            const item = cart.find(it => it.id === id);
+            if (!item) return;
 
-            // Feedback
-            const originalText = this.innerText;
-            this.innerText = 'Added! ✓';
-            this.style.backgroundColor = '#27ae60';
-
-            // Open cart briefly or just update count
-            // toggleCart(); // Optional: auto-open cart
-
-            setTimeout(() => {
-                this.innerText = originalText;
-                this.style.backgroundColor = '';
-            }, 1500);
-        });
-    });
-
-    // Remove from Cart
-    cartItemsContainer.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-item')) {
-            const id = parseInt(e.target.dataset.id);
-            cart = cart.filter(item => item.id !== id);
+            if (e.target.classList.contains('plus')) {
+                item.qty++;
+            } else if (e.target.classList.contains('minus')) {
+                if (item.qty > 1) {
+                    item.qty--;
+                } else {
+                    // If qty is 1 and minus is clicked, remove item? 
+                    // User said add buttons, so maybe just 1 is min.
+                }
+            }
             saveCart();
             updateCartUI();
         }
     });
+
+    // Add to Cart Logic
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-add')) {
+            const btn = e.target;
+            const card = btn.closest('.menu-card');
+            if (!card) return;
+
+            const itemNameEl = card.querySelector('h3');
+            const priceEl = card.querySelector('.price');
+            const qtyInput = card.querySelector('.qty-input');
+
+            if (!itemNameEl || !priceEl) return;
+
+            const itemName = itemNameEl.innerText;
+            const quantity = parseInt(qtyInput ? qtyInput.value : 1) || 1;
+
+            // Safer parsing: Use data-price attribute if available, else strip symbols
+            let price = 0;
+            if (priceEl.dataset.price) {
+                price = parseFloat(priceEl.dataset.price);
+            } else {
+                price = parseFloat(priceEl.innerText.replace(/[^\d.]/g, ''));
+            }
+
+            if (isNaN(price)) price = 0;
+
+            // Group by name: Check if item already exists in cart
+            const existingItem = (cart || []).find(it => it.name === itemName);
+
+            if (existingItem) {
+                existingItem.qty = (existingItem.qty || 0) + quantity;
+                console.log('Existing item updated:', existingItem);
+            } else {
+                const newItem = {
+                    id: Date.now() + Math.random(),
+                    name: itemName,
+                    price: price,
+                    qty: quantity
+                };
+                cart.push(newItem);
+                console.log('New item added to cart:', newItem);
+            }
+
+            saveCart();
+            updateCartUI();
+
+            // Feedback
+            const originalText = btn.innerText;
+            btn.innerText = 'Added! ✓';
+            btn.style.backgroundColor = '#27ae60';
+
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = '';
+                if (qtyInput) qtyInput.value = 1; // Reset qty after adding
+            }, 1500);
+        }
+    });
+
+    // Remove from Cart
+    if (cartItemsContainer) {
+        cartItemsContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-item')) {
+                const id = parseFloat(e.target.dataset.id);
+                cart = cart.filter(item => item.id !== id);
+                saveCart();
+                updateCartUI();
+            }
+        });
+    }
 
     // Save to LocalStorage
     function saveCart() {
@@ -138,7 +225,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update UI
     function updateCartUI() {
         // Update Count
-        if (cartCountElement) cartCountElement.innerText = cart.length;
+        const totalItems = (cart || []).reduce((acc, item) => acc + (parseInt(item.qty) || 1), 0);
+        if (cartCountElement) cartCountElement.innerText = totalItems;
 
         // Update Items List
         if (cartItemsContainer) cartItemsContainer.innerHTML = '';
@@ -151,13 +239,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (checkoutBtn) checkoutBtn.disabled = true;
         } else {
             cart.forEach(item => {
-                total += item.price;
+                const itemPrice = parseFloat(item.price) || 0;
+                const itemQty = parseInt(item.qty) || 1;
+                const itemTotal = itemPrice * itemQty;
+                total += itemTotal;
+
                 const itemEl = document.createElement('div');
                 itemEl.classList.add('cart-item-card');
                 itemEl.innerHTML = `
                     <div class="cart-item-info">
                         <h4>${item.name}</h4>
-                        <span class="cart-item-price">$${item.price.toFixed(2)}</span>
+                        <div class="cart-item-details">
+                            <div class="cart-qty-controls">
+                                <button class="cart-qty-btn minus" data-id="${item.id}">-</button>
+                                <span class="cart-item-qty">${itemQty}</span>
+                                <button class="cart-qty-btn plus" data-id="${item.id}">+</button>
+                            </div>
+                            <span class="cart-item-price">Rs.${itemTotal.toFixed(2)}</span>
+                        </div>
                     </div>
                     <button class="remove-item" data-id="${item.id}">Remove</button>
                 `;
@@ -167,7 +266,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Update Total
-        if (cartTotalElement) cartTotalElement.innerText = '$' + total.toFixed(2);
+        if (cartTotalElement) {
+            console.log('Updating total display to:', total);
+            cartTotalElement.innerText = 'Rs.' + (isNaN(total) ? 0 : total).toFixed(2);
+        }
     }
 
     // Checkout

@@ -9,6 +9,51 @@
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/static/admin.css">
+    <style>
+        .status-select {
+            padding: 0.4rem;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 0.85rem;
+            outline: none;
+            background: #f9f9f9;
+        }
+
+        .btn-update-status {
+            padding: 0.4rem 0.8rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-update-status:hover {
+            background: var(--primary-dark);
+        }
+
+        .status-badge.processing {
+            background: #e0f0ff;
+            color: #007bff;
+        }
+
+        .status-badge.completed {
+            background: #d4edda;
+            color: #28a745;
+        }
+
+        .status-badge.cancelled {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+
+        .status-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
 </head>
 
 <body>
@@ -46,9 +91,21 @@
                         <h3>Total Orders</h3>
                         <p class="stat-number">{{ total_orders }}</p>
                     </div>
-                    <div class="card">
+                    <div class="card" style="border-left: 5px solid #ffc107;">
                         <h3>Pending</h3>
                         <p class="stat-number">{{ pending_orders }}</p>
+                    </div>
+                    <div class="card" style="border-left: 5px solid #007bff;">
+                        <h3>Processing</h3>
+                        <p class="stat-number">{{ processing_orders }}</p>
+                    </div>
+                    <div class="card" style="border-left: 5px solid #28a745;">
+                        <h3>Completed</h3>
+                        <p class="stat-number">{{ completed_orders }}</p>
+                    </div>
+                    <div class="card" style="border-left: 5px solid #dc3545;">
+                        <h3>Cancelled</h3>
+                        <p class="stat-number">{{ cancelled_orders }}</p>
                     </div>
                     <div class="card">
                         <h3>Today's Revenue</h3>
@@ -78,7 +135,7 @@
                                     <td>
                                         <ul class="order-items-list">
                                             {% for item in order['items'] %}
-                                            <li>{{ item['name'] }} (Rs.{{ item['price'] }})</li>
+                                            <li>{{ item['name'] }} (x{{ item['qty'] }})</li>
                                             {% endfor %}
                                         </ul>
                                     </td>
@@ -86,7 +143,23 @@
                                     <td><span class="status-badge {{ order['status']|lower }}">{{ order['status']
                                             }}</span>
                                     </td>
-                                    <td><button class="btn-sm">View</button></td>
+                                    <td>
+                                        <form action="/admin/order/update-status" method="POST"
+                                            style="display:flex; gap:5px;">
+                                            <input type="hidden" name="order_id" value="{{ order['id'] }}">
+                                            <select name="status" class="status-select">
+                                                <option value="Pending" {% if order['status']=='Pending' %}selected{%
+                                                    endif %}>Pending</option>
+                                                <option value="Processing" {% if order['status']=='Processing'
+                                                    %}selected{% endif %}>Processing</option>
+                                                <option value="Completed" {% if order['status']=='Completed'
+                                                    %}selected{% endif %}>Completed</option>
+                                                <option value="Cancelled" {% if order['status']=='Cancelled'
+                                                    %}selected{% endif %}>Cancelled</option>
+                                            </select>
+                                            <button type="submit" class="btn-update-status">Update</button>
+                                        </form>
+                                    </td>
                                 </tr>
                                 {% else %}
                                 <tr>

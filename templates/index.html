@@ -96,13 +96,21 @@
             <div class="card-content">
                 <h3>{{ product.name }}</h3>
                 <p>{{ product.category|capitalize }} selection</p>
-                <div class="card-footer">
-                    <span class="price">Rs.{{ "%.2f"|format(product.price) }}</span>
+                <div class="card-footer" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
+                    <span class="price" data-price="{{ product.price }}">Rs.{{ "%.2f"|format(product.price) }}</span>
                     {% if product.remaining_stock > 0 %}
-                    <button class="btn-add">Add +</button>
+                    <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
+                        <div class="qty-control">
+                            <button class="qty-btn minus">-</button>
+                            <input type="number" class="qty-input" value="1" min="1"
+                                max="{{ product.remaining_stock }}">
+                            <button class="qty-btn plus">+</button>
+                        </div>
+                        <button class="btn-add">Add </button>
+                    </div>
                     {% else %}
                     <button class="btn-add disabled" disabled style="background: #ccc; cursor: not-allowed;">Add
-                        +</button>
+                    </button>
                     {% endif %}
                 </div>
             </div>

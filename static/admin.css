@@ -343,8 +343,8 @@ a {
 /* Stats Cards */
 .stats-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
     margin-bottom: 3rem;
 }
 
@@ -525,13 +525,14 @@ tbody td:last-child {
 
 /* Buttons */
 .btn-sm {
+    display: inline-block;
     padding: 0.6rem 1.2rem;
     border: none;
     border-radius: var(--radius-md);
     background: var(--bg-light);
     color: var(--text-main);
     font-weight: 600;
-    cursor: pointer;
+    text-align: center;
     transition: all 0.2s;
 }
 

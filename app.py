@@ -37,6 +37,7 @@ class OrderItem(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
+    quantity = db.Column(db.Integer, default=1)
 
 class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -61,17 +62,24 @@ admin_credentials = {
 def seed_products():
     if Product.query.count() == 0:
         default_products = [
-            {'name': 'Crispy Samosa', 'price': 2.50, 'category': 'snacks', 'image_url': 'static/assets/images/SAMOSA.jpg', 'stock': 20},
-            {'name': 'Butter Cookies', 'price': 5.00, 'category': 'bakery', 'image_url': 'static/assets/images/cookies.jpg', 'stock': 15},
-            {'name': 'Fresh Fruit Salad', 'price': 6.50, 'category': 'fresh', 'image_url': 'static/assets/images/fruit.avif', 'stock': 10},
-            {'name': 'Hot Bhajji', 'price': 3.00, 'category': 'snacks', 'image_url': 'static/assets/images/BHAJJI.jpg', 'stock': 5},
-            {'name': 'Unnakaya', 'price': 4.00, 'category': 'bakery', 'image_url': 'static/assets/images/UNNAKAYA.jpg', 'stock': 8},
-            {'name': 'Garden Salad', 'price': 7.00, 'category': 'bakery', 'image_url': 'static/assets/images/salad.webp', 'stock': 4}
+            {'name': 'Crispy Samosa', 'price': 15.00, 'category': 'snacks', 'image_url': 'static/assets/images/SAMOSA.jpg', 'stock': 20},
+            {'name': 'Butter Cookies', 'price': 45.00, 'category': 'bakery', 'image_url': 'static/assets/images/cookies.jpg', 'stock': 15},
+            {'name': 'Fresh Fruit Salad', 'price': 60.00, 'category': 'fresh', 'image_url': 'static/assets/images/fruit.avif', 'stock': 10},
+            {'name': 'Hot Bhajji', 'price': 20.00, 'category': 'snacks', 'image_url': 'static/assets/images/BHAJJI.jpg', 'stock': 5},
+            {'name': 'Unnakaya', 'price': 35.00, 'category': 'bakery', 'image_url': 'static/assets/images/UNNAKAYA.jpg', 'stock': 8},
+            {'name': 'Garden Salad', 'price': 70.00, 'category': 'bakery', 'image_url': 'static/assets/images/salad.webp', 'stock': 4}
         ]
         for p in default_products:
             new_p = Product(name=p['name'], price=p['price'], category=p['category'], 
                             image_url=p['image_url'], initial_stock=p['stock'], remaining_stock=p['stock'])
             db.session.add(new_p)
+        db.session.commit()
+    else:
+        # Migration: If prices look like they are in dollars (e.g. < 10), scale them to Rs.
+        products = Product.query.all()
+        for p in products:
+            if p.price < 10:
+                p.price = p.price * 10
         db.session.commit()
 
 with app.app_context():
@@ -169,11 +177,14 @@ def admin_dashboard():
     db_orders = Order.query.order_by(Order.timestamp.desc()).all()
     total_orders = Order.query.count()
     pending_orders = Order.query.filter_by(status='Pending').count()
+    processing_orders = Order.query.filter_by(status='Processing').count()
+    completed_orders = Order.query.filter_by(status='Completed').count()
+    cancelled_orders = Order.query.filter_by(status='Cancelled').count()
     
     # Calculate revenue
     revenue = 0.0
     for o in db_orders:
-        total_str = str(o.total).replace('$', '')
+        total_str = str(o.total).replace('Rs.', '').replace('$', '')
         try:
             revenue += float(total_str)
         except ValueError:
@@ -185,7 +196,7 @@ def admin_dashboard():
         formatted_orders.append({
             'id': o.id,
             'timestamp': o.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-            'items': [{'name': i.name, 'price': i.price} for i in o.items],
+            'items': [{'name': i.name, 'price': i.price, 'qty': getattr(i, 'quantity', 1)} for i in o.items],
             'total': o.total,
             'status': o.status
         })
@@ -195,7 +206,25 @@ def admin_dashboard():
                          username=session.get('admin_username', 'admin'),
                          total_orders=total_orders,
                          pending_orders=pending_orders,
-                         revenue=f"${revenue:.2f}")
+                         processing_orders=processing_orders,
+                         completed_orders=completed_orders,
+                         cancelled_orders=cancelled_orders,
+                         revenue=f"Rs.{revenue:.2f}")
+
+@app.route('/admin/order/update-status', methods=['POST'])
+def update_order_status():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+        
+    order_id = request.form.get('order_id')
+    new_status = request.form.get('status')
+    
+    order = Order.query.get(order_id)
+    if order:
+        order.status = new_status
+        db.session.commit()
+    
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/settings', methods=['GET', 'POST'])
 def admin_settings():
@@ -266,18 +295,22 @@ def order():
 
     if items:
         for item in items:
+            qty = int(item.get('qty', 1))
             # Update Stock
             prod = Product.query.filter_by(name=item['name']).first()
             if prod:
-                if prod.remaining_stock >= 1:
-                    prod.remaining_stock -= 1
+                if prod.remaining_stock >= qty:
+                    prod.remaining_stock -= qty
                 else:
-                    print(f"WARNING: {prod.name} is out of stock!")
+                    qty_available = prod.remaining_stock
+                    prod.remaining_stock = 0
+                    print(f"WARNING: {prod.name} only had {qty_available} left!")
             
             order_item = OrderItem(
                 order_id=new_order.id,
                 name=item['name'],
-                price=float(str(item['price']).replace('Rs.', '').replace('$', ''))
+                price=float(str(item['price']).replace('Rs.', '').replace('$', '')),
+                quantity=qty
             )
             db.session.add(order_item)
     else:
@@ -296,7 +329,8 @@ def order():
         order_item = OrderItem(
             order_id=new_order.id,
             name=item_name,
-            price=float(item_price) if item_price else 0.0
+            price=float(item_price) if item_price else 0.0,
+            quantity=1
         )
         db.session.add(order_item)
 
@@ -325,6 +359,7 @@ def admin_users():
         last_active = last_order.timestamp.strftime("%Y-%m-%d %H:%M:%S") if last_order else "N/A"
         
         user_list.append({
+            'id': u.id,
             'name': u.full_name,
             'phone': u.phone,
             'email': u.email,
@@ -334,6 +369,44 @@ def admin_users():
         })
             
     return render_template('admin_users.html', users=user_list, username=session.get('admin_username', 'admin'))
+
+@app.route('/admin/user/<int:user_id>/history')
+def admin_user_history(user_id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+    
+    try:
+        user = User.query.get_or_404(user_id)
+        # Get user's orders with items
+        user_orders = Order.query.filter_by(user_id=user.id).order_by(Order.timestamp.desc()).all()
+        
+        formatted_orders = []
+        for o in user_orders:
+            # Map items and handle potential missing quantity
+            items_list = []
+            for i in o.items:
+                items_list.append({
+                    'name': i.name or "Unknown Item",
+                    'price': i.price or 0.0,
+                    'qty': int(getattr(i, 'quantity', 1) or 1)
+                })
+            
+            formatted_orders.append({
+                'id': o.id,
+                'timestamp': o.timestamp.strftime("%Y-%m-%d %H:%M:%S") if o.timestamp else "N/A",
+                'items': items_list,
+                'total': o.total or "Rs.0.00",
+                'status': o.status or "Pending"
+            })
+            
+        print(f"DEBUG: Found {len(formatted_orders)} orders for user {user.full_name}")
+        return render_template('admin_user_history.html', 
+                             user=user, 
+                             orders=formatted_orders,
+                             username=session.get('admin_username', 'admin'))
+    except Exception as e:
+        print(f"ERROR in admin_user_history: {e}")
+        return f"Error loading user history: {e}", 500
 
 @app.route('/admin/products', methods=['GET', 'POST'])
 def admin_products():

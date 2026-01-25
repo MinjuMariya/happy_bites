@@ -69,11 +69,13 @@
                                     <td style="font-size: 0.9em; max-width: 200px;">{{ user['address'] }}</td>
                                     <td>{{ user['orders_count'] }}</td>
                                     <td style="font-size: 0.9em;">{{ user['last_order'] }}</td>
-                                    <td><button class="btn-sm">View History</button></td>
+                                    <td style="min-width: 150px;"><a href="/admin/user/{{ user['id'] }}/history"
+                                            class="btn-sm" style="text-decoration:none; width: 100%;">View History</a>
+                                    </td>
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="5" class="text-center">No users found yet.</td>
+                                    <td colspan="6" class="text-center">No users found yet.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

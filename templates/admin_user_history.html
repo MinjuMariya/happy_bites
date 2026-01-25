@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User History | Happy Admin</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/admin.css">
+    <style>
+        .user-detail-card {
+            background: var(--surface-white);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            margin-bottom: 2rem;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .user-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .detail-item h4 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.3rem;
+        }
+
+        .detail-item p {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--bg-dark);
+        }
+
+        .status-badge.processing {
+            background: #e0f0ff;
+            color: #007bff;
+        }
+
+        .status-badge.completed {
+            background: #d4edda;
+            color: #28a745;
+        }
+
+        .status-badge.cancelled {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+
+        .status-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <h2>Happy Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin">📦 <span>Orders</span></a>
+                <a href="/admin/users" class="active">👥 <span>Users</span></a>
+                <a href="/admin/products">🥐 <span>Products</span></a>
+                <a href="/admin/reports">📈 <span>Reports</span></a>
+                <a href="/admin/settings">⚙️ <span>Settings</span></a>
+                <a href="/" target="_blank">🔗 <span>View Site</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/admin/logout">Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <h1>User History</h1>
+                <div class="user-info">
+                    <span>{{ username }}</span>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <a href="/admin/users"
+                    style="display: inline-block; margin-bottom: 1.5rem; color: var(--primary); font-weight: 600;">←
+                    Back to Users</a>
+
+                <div class="user-detail-card">
+                    <h3>User Details</h3>
+                    <div class="user-detail-grid">
+                        <div class="detail-item">
+                            <h4>Full Name</h4>
+                            <p>{{ user.full_name }}</p>
+                        </div>
+                        <div class="detail-item">
+                            <h4>Phone Number</h4>
+                            <p>{{ user.phone }}</p>
+                        </div>
+                        <div class="detail-item">
+                            <h4>Email Address</h4>
+                            <p>{{ user.email }}</p>
+                        </div>
+                        <div class="detail-item">
+                            <h4>Username</h4>
+                            <p>{{ user.username }}</p>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee;">
+                        <h4>Shipping Address</h4>
+                        <p style="margin-top: 0.5rem; color: #555; line-height: 1.5;">{{ user.address }}</p>
+                    </div>
+                </div>
+
+                <div class="orders-section">
+                    <h2>Purchase History</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>#{{ order['id'] }}</td>
+                                    <td>{{ order['timestamp'] }}</td>
+                                    <td>
+                                        <ul class="order-items-list" style="list-style: none; padding: 0;">
+                                            {% for item in order['items'] %}
+                                            <li style="font-size: 0.9em; margin-bottom: 2px;">{{ item['name'] }} (x{{
+                                                item['qty'] }})</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td class="amount">{{ order['total'] }}</td>
+                                    <td><span class="status-badge {{ (order['status']|lower)|default('pending') }}">{{
+                                            order['status'] }}</span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">This user hasn't placed any orders yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
