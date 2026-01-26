@@ -268,7 +268,7 @@
                 <h2>Edit Product</h2>
                 <span class="close-modal" onclick="closeModal()">&times;</span>
             </div>
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="edit">
                 <input type="hidden" name="product_id" id="edit_p_id">
                 <div class="form-grid">
@@ -293,6 +293,32 @@
                         <input type="number" name="stock" id="edit_stock" required>
                     </div>
                 </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-weight: bold; margin-bottom: 5px;">Update Image (Optional)</label>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
+                        <label style="font-weight: normal; cursor: pointer;">
+                            <input type="radio" name="edit_image_type" value="keep" checked
+                                onchange="toggleEditImageInput(this.value)"> Keep Current
+                        </label>
+                        <label style="font-weight: normal; cursor: pointer;">
+                            <input type="radio" name="edit_image_type" value="file"
+                                onchange="toggleEditImageInput(this.value)"> Upload new
+                        </label>
+                        <label style="font-weight: normal; cursor: pointer;">
+                            <input type="radio" name="edit_image_type" value="url"
+                                onchange="toggleEditImageInput(this.value)"> New URL
+                        </label>
+                    </div>
+                    <div id="edit_file_input_container" style="display: none;">
+                        <input type="file" name="edit_image_file" accept="image/*">
+                    </div>
+                    <div id="edit_url_input_container" style="display: none;">
+                        <input type="text" name="edit_image_url" placeholder="https://example.com/image.jpg"
+                            style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                </div>
+
                 <button type="submit" class="btn-primary" style="width: 100%;">Save Changes</button>
             </form>
         </div>
@@ -345,6 +371,22 @@
                 fileInput.style.display = 'none';
                 urlInput.style.display = 'block';
                 fileInput.value = ''; // Clear file if switching to URL
+            }
+        }
+
+        function toggleEditImageInput(type) {
+            const fileContainer = document.getElementById('edit_file_input_container');
+            const urlContainer = document.getElementById('edit_url_input_container');
+
+            if (type === 'file') {
+                fileContainer.style.display = 'block';
+                urlContainer.style.display = 'none';
+            } else if (type === 'url') {
+                fileContainer.style.display = 'none';
+                urlContainer.style.display = 'block';
+            } else {
+                fileContainer.style.display = 'none';
+                urlContainer.style.display = 'none';
             }
         }
 

@@ -108,6 +108,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Generic Warning Modal
+    function showStockWarning(max) {
+        const modal = document.getElementById('stock-warning-modal');
+        const msg = document.getElementById('stock-warning-msg');
+        if (modal && msg) {
+            msg.innerText = `Only ${max} items left in stock.`;
+            modal.classList.add('show');
+        } else {
+            alert(`Only ${max} items left in stock.`);
+        }
+    }
+
     // Fetch Stock Data Function
     async function fetchStockData() {
         try {
@@ -126,18 +138,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Update Stock Display
                     const stockInfo = card.querySelector('.stock-info');
                     if (stockInfo) {
-                        if (product.remaining_stock > 0) {
-                            stockInfo.innerText = `Stock left: ${product.remaining_stock}`;
+                        stockInfo.innerText = `Stock left: ${product.remaining_stock}`;
+                        if (product.remaining_stock === 0) {
+                            stockInfo.style.color = 'red';
+                        } else {
+                            stockInfo.style.color = '#e67e22';
                         }
                     }
 
                     // Update Input Limits
                     const qtyInput = card.querySelector('.qty-input');
+                    const qtyMinus = card.querySelector('.qty-btn.minus');
+                    const qtyPlus = card.querySelector('.qty-btn.plus');
+
                     if (qtyInput) {
                         qtyInput.setAttribute('max', product.remaining_stock);
                         // If current input value exceeds new stock, clamp it
                         if (parseInt(qtyInput.value) > product.remaining_stock) {
                             qtyInput.value = Math.max(1, product.remaining_stock);
+                        }
+
+                        if (product.remaining_stock === 0) {
+                            qtyInput.value = 0;
+                            qtyInput.disabled = true;
+                            if (qtyMinus) qtyMinus.disabled = true;
+                            if (qtyPlus) qtyPlus.disabled = true;
+                        } else {
+                            qtyInput.disabled = false;
+                            if (qtyMinus) qtyMinus.disabled = false;
+                            if (qtyPlus) qtyPlus.disabled = false;
+                            // Ensure at least 1 if available
+                            if (qtyInput.value == 0) qtyInput.value = 1;
                         }
                     }
 
@@ -236,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (val < max) {
                     val++;
                 } else {
-                    alert(`Only ${max} items left in stock.`);
+                    showStockWarning(max);
                 }
             } else if (e.target.classList.contains('minus')) {
                 if (val > 1) val--;
@@ -257,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (item.qty < max) {
                     item.qty++;
                 } else {
-                    alert(`Only ${max} items left in stock.`);
+                    showStockWarning(max);
                 }
             } else if (e.target.classList.contains('minus')) {
                 if (item.qty > 1) {
@@ -306,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (existingItem) {
                 const newTotal = (existingItem.qty || 0) + quantity;
                 if (newTotal > maxStock) {
-                    alert(`Only ${maxStock} items left in stock.`);
+                    showStockWarning(maxStock);
                     return;
                 }
                 existingItem.qty = newTotal;
@@ -315,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Existing item updated:', existingItem);
             } else {
                 if (quantity > maxStock) {
-                    alert(`Only ${maxStock} items left in stock.`);
+                    showStockWarning(maxStock);
                     return;
                 }
                 const newItem = {

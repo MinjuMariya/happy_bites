@@ -338,6 +338,17 @@
             <button class="btn btn-primary" id="close-feedback-modal">Close</button>
         </div>
     </div>
+
+    <div id="stock-warning-modal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="modal-icon">⚠️</div>
+            <h2>Low Stock</h2>
+            <p id="stock-warning-msg">Only X items left in stock.</p>
+            <button class="btn btn-primary"
+                onclick="document.getElementById('stock-warning-modal').classList.remove('show')">Okay</button>
+        </div>
+    </div>
+
     <div class="cart-overlay"></div>
 
     <script src="/static/script.js"></script>

@@ -611,6 +611,27 @@ def admin_products():
                 prod.price = float(request.form.get('price'))
                 prod.category = request.form.get('category')
                 prod.remaining_stock = int(request.form.get('stock'))
+
+                # Update Image if provided
+                image_type = request.form.get('edit_image_type')
+                new_image_url = None
+                
+                if image_type == 'file':
+                    if 'edit_image_file' in request.files:
+                        file = request.files['edit_image_file']
+                        if file and allowed_file(file.filename):
+                            filename = secure_filename(file.filename)
+                            if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                                os.makedirs(app.config['UPLOAD_FOLDER'])
+                            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                            new_image_url = f"{UPLOAD_FOLDER}/{filename}"
+                elif image_type == 'url':
+                     url_val = request.form.get('edit_image_url')
+                     if url_val:
+                         new_image_url = url_val
+                
+                if new_image_url:
+                    prod.image_url = new_image_url
         
         elif action == 'delete':
             p_id = request.form.get('product_id')
