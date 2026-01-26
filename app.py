@@ -181,14 +181,15 @@ def admin_dashboard():
     completed_orders = Order.query.filter_by(status='Completed').count()
     cancelled_orders = Order.query.filter_by(status='Cancelled').count()
     
-    # Calculate revenue
+    # Calculate revenue (excluding cancelled orders)
     revenue = 0.0
     for o in db_orders:
-        total_str = str(o.total).replace('Rs.', '').replace('$', '')
-        try:
-            revenue += float(total_str)
-        except ValueError:
-            pass
+        if o.status != 'Cancelled':  # Exclude cancelled orders
+            total_str = str(o.total).replace('Rs.', '').replace('$', '')
+            try:
+                revenue += float(total_str)
+            except ValueError:
+                pass
             
     # Format for template
     formatted_orders = []
@@ -198,7 +199,9 @@ def admin_dashboard():
             'timestamp': o.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             'items': [{'name': i.name, 'price': i.price, 'qty': getattr(i, 'quantity', 1)} for i in o.items],
             'total': o.total,
-            'status': o.status
+            'status': o.status,
+            'customer_name': o.customer_name,
+            'customer_phone': o.customer_phone
         })
 
     return render_template('admin_dashboard.html', 
@@ -369,6 +372,8 @@ def admin_users():
         })
             
     return render_template('admin_users.html', users=user_list, username=session.get('admin_username', 'admin'))
+
+
 
 @app.route('/admin/user/<int:user_id>/history')
 def admin_user_history(user_id):
