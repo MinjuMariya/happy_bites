@@ -157,7 +157,7 @@
             <div class="dashboard-content">
                 <div class="product-form-container">
                     <h2>Add New Product</h2>
-                    <form method="POST">
+                    <form method="POST" enctype="multipart/form-data">
                         <input type="hidden" name="action" value="add">
                         <div class="form-grid">
                             <div class="form-group">
@@ -176,9 +176,24 @@
                                     <option value="fresh">Fresh</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label>Image URL</label>
-                                <input type="text" name="image_url" placeholder="static/assets/images/...">
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label>Product Image</label>
+                                <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
+                                    <label style="font-weight: normal; cursor: pointer;">
+                                        <input type="radio" name="image_type" value="file" checked
+                                            onchange="toggleImageInput(this.value)"> Upload from Computer
+                                    </label>
+                                    <label style="font-weight: normal; cursor: pointer;">
+                                        <input type="radio" name="image_type" value="url"
+                                            onchange="toggleImageInput(this.value)"> Image URL / Drive Link
+                                    </label>
+                                </div>
+                                <input type="file" name="image_file" id="input_file" accept="image/*">
+                                <input type="text" name="image_url" id="input_url"
+                                    placeholder="https://example.com/image.jpg" style="display: none;">
+                                <small style="display: block; color: #666; margin-top: 5px;">
+                                    For Google Drive, try using a direct link generator or ensure the link is public.
+                                </small>
                             </div>
                             <div class="form-group">
                                 <label>Initial Stock</label>
@@ -208,7 +223,8 @@
                                 {% for product in products %}
                                 <tr>
                                     <td>
-                                        <img src="/{{ product.image_url }}" alt="" class="product-thumbnail">
+                                        <img src="{{ product.image_url if '://' in product.image_url else '/' + product.image_url }}"
+                                            alt="" class="product-thumbnail">
                                     </td>
                                     <td><strong>{{ product.name }}</strong></td>
                                     <td><span class="status-badge" style="background:#eee; color:#333">{{
@@ -231,12 +247,8 @@
                                                 onclick="openEditModal('{{ product.id }}', '{{ product.name }}', '{{ product.price }}', '{{ product.category }}', '{{ product.remaining_stock }}')">
                                                 Edit
                                             </button>
-                                            <form method="POST" style="display:inline;">
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="product_id" value="{{ product.id }}">
-                                                <button type="submit" class="btn-delete"
-                                                    onclick="return confirm('Delete this product?')">Remove</button>
-                                            </form>
+                                            <button class="btn-delete"
+                                                onclick="openDeleteModal('{{ product.id }}')">Remove</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -286,7 +298,56 @@
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h2 style="color: #dc3545; margin-bottom: 1rem;">Delete Product?</h2>
+            <p>Are you sure you want to remove this product? This action cannot be undone.</p>
+            <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
+                <button onclick="closeDeleteModal()"
+                    style="padding: 0.6rem 1.2rem; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer;">Cancel</button>
+                <form method="POST">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="product_id" id="delete_input_id">
+                    <button type="submit" class="btn-delete" style="width: auto;">Yes, Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div id="successModal" class="modal" style="display: block;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🗑️</div>
+            {% for category, message in messages %}
+            <h2 style="color: #333;">Product Deleted</h2>
+            <p style="color: #666; margin-top: 0.5rem;">{{ message }}</p>
+            {% endfor %}
+            <button onclick="document.getElementById('successModal').style.display='none'" class="btn-primary"
+                style="margin-top: 1.5rem; width: 100px;">OK</button>
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
     <script>
+        function toggleImageInput(type) {
+            const fileInput = document.getElementById('input_file');
+            const urlInput = document.getElementById('input_url');
+
+            if (type === 'file') {
+                fileInput.style.display = 'block';
+                urlInput.style.display = 'none';
+                urlInput.value = ''; // Clear URL if switching to file
+            } else {
+                fileInput.style.display = 'none';
+                urlInput.style.display = 'block';
+                fileInput.value = ''; // Clear file if switching to URL
+            }
+        }
+
         function openEditModal(id, name, price, category, stock) {
             document.getElementById('edit_p_id').value = id;
             document.getElementById('edit_name').value = name;
@@ -296,14 +357,32 @@
             document.getElementById('editModal').style.display = 'block';
         }
 
+        function openDeleteModal(id) {
+            document.getElementById('delete_input_id').value = id;
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
         function closeModal() {
             document.getElementById('editModal').style.display = 'none';
         }
 
         window.onclick = function (event) {
-            let modal = document.getElementById('editModal');
-            if (event.target == modal) {
-                closeModal();
+            let editModal = document.getElementById('editModal');
+            let deleteModal = document.getElementById('deleteModal');
+            let successModal = document.getElementById('successModal');
+
+            if (event.target == editModal) {
+                editModal.style.display = 'none';
+            }
+            if (event.target == deleteModal) {
+                deleteModal.style.display = 'none';
+            }
+            if (successModal && event.target == successModal) {
+                successModal.style.display = 'none';
             }
         }
     </script>

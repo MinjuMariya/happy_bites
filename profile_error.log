@@ -1,0 +1,17 @@
+'builtin_function_or_method' object is not iterable
+Traceback (most recent call last):
+  File "C:\Users\dell\me\happy_bites\app.py", line 259, in user_profile
+    return render_template('profile.html', user=user, orders=formatted_orders)
+  File "C:\Users\dell\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\dell\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\dell\AppData\Local\Programs\Python\Python313\Lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\dell\AppData\Local\Programs\Python\Python313\Lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\dell\me\happy_bites\templates\profile.html", line 282, in top-level template code
+    {% for item in order.items %}
+    ^
+TypeError: 'builtin_function_or_method' object is not iterable

@@ -128,6 +128,7 @@
                                 <tr>
                                     <th>#ID</th>
                                     <th>Date</th>
+                                    <th>Delivery Address</th>
                                     <th>Items</th>
                                     <th>Total</th>
                                     <th>Status</th>
@@ -138,6 +139,9 @@
                                 <tr>
                                     <td>#{{ order['id'] }}</td>
                                     <td>{{ order['timestamp'] }}</td>
+                                    <td style="max-width: 200px; font-size: 0.9em;">
+                                        {{ order['customer_address'] }}
+                                    </td>
                                     <td>
                                         <ul class="order-items-list" style="list-style: none; padding: 0;">
                                             {% for item in order['items'] %}

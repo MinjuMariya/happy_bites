@@ -1,9 +1,17 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from werkzeug.utils import secure_filename
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 import os
 
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = 'happy_secret_key'
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'happybites.db')
@@ -171,6 +179,7 @@ def signup():
         session['username'] = username
         session['full_name'] = full_name
         session['phone'] = phone
+        session['address'] = address
         return redirect(url_for('home'))
         
     return render_template('signup.html')
@@ -187,6 +196,7 @@ def login():
             session['username'] = username
             session['full_name'] = user.full_name
             session['phone'] = user.phone
+            session['address'] = user.address
             return redirect(url_for('home'))
         else:
             return render_template('login.html', error="Invalid username or password")
@@ -243,6 +253,9 @@ def admin_dashboard():
         formatted_orders.append({
             'id': o.id,
             'timestamp': o.timestamp.strftime("%Y-%m-%d %H:%M:%S") if o.timestamp else "N/A",
+            'customer_name': o.customer_name,
+            'customer_phone': o.customer_phone,
+            'customer_address': o.customer_address,
             'items': [{'name': i.name, 'price': i.price, 'qty': getattr(i, 'quantity', 1)} for i in o.items],
             'total': o.total,
             'status': o.status
@@ -411,7 +424,54 @@ def order():
 def admin_reports():
     if not session.get('admin_logged_in'):
         return redirect(url_for('admin_login'))
-    return render_template('admin_reports.html', username=session.get('admin_username', 'admin'))
+    
+    # helper to calc stats
+    def calculate_stats(orders):
+        revenue = 0.0
+        count = len(orders)
+        items_sold = 0
+        product_breakdown = {}
+        
+        for o in orders:
+            if o.status != 'Cancelled':
+                try:
+                    # Clean price string
+                    total_str = str(o.total).replace('Rs.', '').replace('$', '').replace(',', '').strip()
+                    revenue += float(total_str)
+                except:
+                    pass
+                
+                for item in o.items:
+                    qty = getattr(item, 'quantity', 1) or 1
+                    items_sold += qty
+                    product_breakdown[item.name] = product_breakdown.get(item.name, 0) + qty
+        
+        return {
+            'revenue': f"Rs.{revenue:.2f}",
+            'orders': count,
+            'items_sold': items_sold,
+            'top_products': sorted(product_breakdown.items(), key=lambda x: x[1], reverse=True)[:5]
+        }
+
+    # Complete Report
+    all_orders = Order.query.order_by(Order.timestamp.desc()).all()
+    complete_report = calculate_stats(all_orders)
+    
+    # Daily Report
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    daily_orders = [o for o in all_orders if o.timestamp.strftime('%Y-%m-%d') == today_str]
+    daily_report = calculate_stats(daily_orders)
+    
+    # Monthly Report
+    this_month_str = datetime.utcnow().strftime('%Y-%m')
+    monthly_orders = [o for o in all_orders if o.timestamp.strftime('%Y-%m') == this_month_str]
+    monthly_report = calculate_stats(monthly_orders)
+    
+    return render_template('admin_reports.html', 
+                         username=session.get('admin_username', 'admin'),
+                         daily_report=daily_report,
+                         monthly_report=monthly_report,
+                         complete_report=complete_report)
 
 @app.route('/admin/users')
 def admin_users():
@@ -464,6 +524,9 @@ def admin_user_history(user_id):
             formatted_orders.append({
                 'id': o.id,
                 'timestamp': o.timestamp.strftime("%Y-%m-%d %H:%M:%S") if o.timestamp else "N/A",
+                'customer_name': o.customer_name,
+                'customer_phone': o.customer_phone,
+                'customer_address': o.customer_address,
                 'items': items_list,
                 'total': o.total or "Rs.0.00",
                 'status': o.status or "Pending"
@@ -487,11 +550,30 @@ def admin_products():
         action = request.form.get('action')
         
         if action == 'add':
+            image_url = ''
+            image_type = request.form.get('image_type')
+            
+            if image_type == 'file':
+                # Handle file upload
+                if 'image_file' in request.files:
+                    file = request.files['image_file']
+                    if file and allowed_file(file.filename):
+                        filename = secure_filename(file.filename)
+                        # Ensure directory exists
+                        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                            os.makedirs(app.config['UPLOAD_FOLDER'])
+                        
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        # Use forward slashes for URLs even on Windows
+                        image_url = f"{UPLOAD_FOLDER}/{filename}"
+            else:
+                 image_url = request.form.get('image_url')
+
             new_p = Product(
                 name=request.form.get('name'),
                 price=float(request.form.get('price')),
                 category=request.form.get('category'),
-                image_url=request.form.get('image_url'),
+                image_url=image_url,
                 initial_stock=int(request.form.get('stock')),
                 remaining_stock=int(request.form.get('stock'))
             )
@@ -511,6 +593,7 @@ def admin_products():
             prod = Product.query.get(p_id)
             if prod:
                 db.session.delete(prod)
+                flash('Product deleted successfully!', 'success')
         
         db.session.commit()
         return redirect(url_for('admin_products'))

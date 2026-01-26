@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const addressInput = document.getElementById('cart-address');
 
             if (!addressInput) {
-                // User is not logged in (prompted in UI, but safety check)
+                // User is not logged in
                 alert('Please login to place an order.');
                 window.location.href = '/login';
                 return;
@@ -292,56 +292,94 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Send order to backend
-            // Note: Backend will get name/phone from session
-            fetch('/api/order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    items: cart,
-                    total: cartTotalElement.innerText,
-                    customer: {
-                        address: addressInput.value.trim()
-                    }
-                }),
-            })
-                .then(response => response.json())
-                .then(data => {
-                    // Show Success Modal
-                    const successModal = document.getElementById('order-success-modal');
-                    if (successModal) {
-                        successModal.classList.add('show');
+            // Show Confirmation Modal
+            const confirmModal = document.getElementById('checkout-confirm-modal');
+            const confirmAddressSpan = document.getElementById('confirm-address');
+            const confirmTotalSpan = document.getElementById('confirm-total');
+            const confirmBtn = document.getElementById('confirm-checkout-btn');
+            const cancelBtn = document.getElementById('cancel-checkout-btn');
 
-                        // Close modal handlers
-                        const closeBtns = successModal.querySelectorAll('button');
-                        closeBtns.forEach(btn => {
-                            btn.addEventListener('click', () => {
-                                successModal.classList.remove('show');
-                            });
-                        });
+            if (confirmModal) {
+                confirmAddressSpan.innerText = addressInput.value.trim();
+                confirmTotalSpan.innerText = cartTotalElement.innerText;
+                confirmModal.classList.add('show');
 
-                        // Close on click outside
-                        successModal.addEventListener('click', (e) => {
-                            if (e.target === successModal) {
-                                successModal.classList.remove('show');
-                            }
-                        });
-                    }
+                // Handle Cancel
+                cancelBtn.onclick = () => {
+                    confirmModal.classList.remove('show');
+                };
 
-                    cart = [];
-                    saveCart();
-                    updateCartUI();
-                    toggleCart();
-                    // Clear address input if desired, but maybe keep for next order
-                    // addressInput.value = '';
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Something went wrong. Please try again.');
-                });
+                // Confirm and Proceed
+                confirmBtn.onclick = () => {
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerText = 'Processing...';
+                    
+                    performCheckout(addressInput.value.trim(), confirmModal, confirmBtn);
+                };
+            } else {
+                // Fallback if modal missing
+                performCheckout(addressInput.value.trim(), null, null);
+            }
         });
+    }
+
+    function performCheckout(address, modal, btn) {
+        fetch('/api/order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                items: cart,
+                total: cartTotalElement.innerText,
+                customer: {
+                    address: address
+                }
+            }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if(modal) modal.classList.remove('show');
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Confirm Order';
+                }
+
+                // Show Success Modal
+                const successModal = document.getElementById('order-success-modal');
+                if (successModal) {
+                    successModal.classList.add('show');
+
+                    // Close modal handlers
+                    const closeBtns = successModal.querySelectorAll('button');
+                    closeBtns.forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            successModal.classList.remove('show');
+                        });
+                    });
+
+                    // Close on click outside
+                    successModal.addEventListener('click', (e) => {
+                        if (e.target === successModal) {
+                            successModal.classList.remove('show');
+                        }
+                    });
+                }
+
+                cart = [];
+                saveCart();
+                updateCartUI();
+                toggleCart();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again.');
+                if(modal) modal.classList.remove('show');
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Confirm Order';
+                }
+            });
     }
 
     // Feedback Submission
