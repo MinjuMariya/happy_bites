@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Feedbacks | Happy Bites</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        .feedback-container {
+            padding: 120px 20px 60px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .feedback-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+            border-left: 5px solid var(--primary);
+        }
+
+        .rating {
+            color: var(--primary);
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar scrolled" id="navbar">
+        <div class="container nav-container">
+            <a href="/" class="logo">
+                <img src="static/assets/images/logo.jpeg" alt="Happy Bites Logo" class="logo-img">
+                <span class="logo-text">Happy Bites</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/menu" class="nav-link">Menu</a></li>
+                <li><a href="/feedbacks" class="nav-link active">Feedbacks</a></li>
+                {% if session.user_logged_in %}
+                <li><a href="/my_orders" class="nav-link">My Orders</a></li>
+                <li><a href="/logout" class="nav-link">Logout</a></li>
+                {% else %}
+                <li><a href="/login" class="nav-link">Login</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="feedback-container">
+        <h1 class="section-title text-center">What People Say</h1>
+        <p class="section-desc text-center" style="margin-bottom: 3rem;">Real reviews from our happy customers</p>
+
+        {% if feedbacks %}
+        {% for f in feedbacks %}
+        <div class="feedback-card">
+            <div class="rating">
+                {% for i in range(f.rating) %}★{% endfor %}
+                {% for i in range(5 - f.rating) %}<span style="color: #ccc;">★</span>{% endfor %}
+            </div>
+            <p style="font-style: italic; color: #555; margin-bottom: 1rem;">"{{ f.message }}"</p>
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #888;">
+                <span>Happy Customer</span>
+                <span>{{ f.timestamp.strftime('%d %B %Y') }}</span>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-center">No feedbacks yet. Be the first to share your thoughts!</p>
+        {% endif %}
+
+        <div class="text-center" style="margin-top: 3rem;">
+            <a href="/" class="btn btn-secondary">Back to Home</a>
+        </div>
+    </div>
+
+</body>
+
+</html>

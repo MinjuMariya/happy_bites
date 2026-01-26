@@ -94,6 +94,122 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize cart
     updateCartUI();
+    fetchStockData(); // Real-time stock fetch
+
+    // Global Cart Sync (Cross-tab)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'happyBitesCart') {
+            try {
+                const stored = localStorage.getItem('happyBitesCart');
+                cart = stored ? JSON.parse(stored) : [];
+                updateCartUI();
+                fetchStockData(); // Refresh stock view too
+            } catch (err) { console.error(err); }
+        }
+    });
+
+    // Fetch Stock Data Function
+    async function fetchStockData() {
+        try {
+            const res = await fetch('/api/products');
+            if (!res.ok) return;
+            const products = await res.json();
+
+            const cards = document.querySelectorAll('.menu-card');
+            cards.forEach(card => {
+                const nameEl = card.querySelector('h3');
+                if (!nameEl) return;
+                const name = nameEl.innerText.trim();
+                const product = products.find(p => p.name === name);
+
+                if (product) {
+                    // Update Stock Display
+                    const stockInfo = card.querySelector('.stock-info');
+                    if (stockInfo) {
+                        if (product.remaining_stock > 0) {
+                            stockInfo.innerText = `Stock left: ${product.remaining_stock}`;
+                        }
+                    }
+
+                    // Update Input Limits
+                    const qtyInput = card.querySelector('.qty-input');
+                    if (qtyInput) {
+                        qtyInput.setAttribute('max', product.remaining_stock);
+                        // If current input value exceeds new stock, clamp it
+                        if (parseInt(qtyInput.value) > product.remaining_stock) {
+                            qtyInput.value = Math.max(1, product.remaining_stock);
+                        }
+                    }
+
+                    // Update Cart Item Max Stock if exists
+                    const cartItem = cart.find(c => c.name === name);
+                    if (cartItem) {
+                        cartItem.maxStock = product.remaining_stock;
+                        // Clamp quantity if it exceeds new stock
+                        if (cartItem.qty > product.remaining_stock) {
+                            cartItem.qty = Math.max(0, product.remaining_stock);
+                            // If stock is 0, remove item? Or keep as 0? 
+                            // Existing logic in updateCartUI handles 0 qty? No, it reduces.
+                            // Better remove if 0 to avoid confusion 
+                            if (cartItem.qty === 0) {
+                                cart = cart.filter(c => c.name !== name);
+                            }
+                        }
+                        saveCart(); // persist limit update
+                    }
+
+                    // Handle Out of Stock / Low Stock Visuals
+                    const imgContainer = card.querySelector('.card-image');
+                    const addBtn = card.querySelector('.btn-add');
+                    let overlay = imgContainer.querySelector('.stock-overlay');
+
+                    // Reset button state first
+                    if (addBtn) {
+                        addBtn.classList.remove('disabled');
+                        addBtn.style.background = ''; // reset
+                        addBtn.style.cursor = '';
+                        addBtn.disabled = false;
+                        addBtn.innerText = "Add +";
+                    }
+
+                    if (product.remaining_stock === 0) {
+                        // Out of Stock
+                        if (!overlay) {
+                            overlay = document.createElement('div');
+                            overlay.className = 'stock-overlay out-of-stock';
+                            imgContainer.appendChild(overlay);
+                        }
+                        overlay.className = 'stock-overlay out-of-stock';
+                        overlay.innerText = 'OUT OF STOCK';
+
+                        // Disable Button
+                        if (addBtn) {
+                            addBtn.classList.add('disabled');
+                            addBtn.style.background = '#ccc';
+                            addBtn.style.cursor = 'not-allowed';
+                            addBtn.disabled = true;
+                            addBtn.innerText = "Out of Stock";
+                        }
+                    } else if (product.remaining_stock < 5) {
+                        // Low Stock
+                        if (!overlay || overlay.classList.contains('out-of-stock')) {
+                            if (overlay) overlay.remove();
+                            overlay = document.createElement('div');
+                            imgContainer.appendChild(overlay);
+                        }
+                        overlay.className = 'stock-overlay few-left';
+                        overlay.innerText = 'FEW LEFT!';
+                    } else {
+                        // Plenty Stock
+                        if (overlay) overlay.remove();
+                    }
+                }
+            });
+            updateCartUI(); // Refresh cart UI with new limits
+        } catch (e) {
+            console.error("Error fetching stock:", e);
+        }
+    }
 
     // Toggle Cart
     function toggleCart() {
@@ -114,9 +230,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const input = control.querySelector('.qty-input');
             if (!input) return;
             let val = parseInt(input.value) || 1;
+            const max = parseInt(input.getAttribute('max')) || 9999;
 
             if (e.target.classList.contains('plus')) {
-                val++;
+                if (val < max) {
+                    val++;
+                } else {
+                    alert(`Only ${max} items left in stock.`);
+                }
             } else if (e.target.classList.contains('minus')) {
                 if (val > 1) val--;
             }
@@ -128,17 +249,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // Cart quantity adjustment
         if (e.target.classList.contains('cart-qty-btn')) {
             const id = parseFloat(e.target.dataset.id);
-            const item = cart.find(it => it.id === id);
+            let item = cart.find(it => it.id === id);
             if (!item) return;
 
             if (e.target.classList.contains('plus')) {
-                item.qty++;
+                const max = item.maxStock || 9999;
+                if (item.qty < max) {
+                    item.qty++;
+                } else {
+                    alert(`Only ${max} items left in stock.`);
+                }
             } else if (e.target.classList.contains('minus')) {
                 if (item.qty > 1) {
                     item.qty--;
                 } else {
-                    // If qty is 1 and minus is clicked, remove item? 
-                    // User said add buttons, so maybe just 1 is min.
+                    // Remove the item from the cart
+                    cart = cart.filter(it => it.id !== id);
                 }
             }
             saveCart();
@@ -161,6 +287,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const itemName = itemNameEl.innerText;
             const quantity = parseInt(qtyInput ? qtyInput.value : 1) || 1;
+            // Get max stock from the input attribute
+            const maxStock = parseInt(qtyInput ? qtyInput.getAttribute('max') : 9999) || 9999;
 
             // Safer parsing: Use data-price attribute if available, else strip symbols
             let price = 0;
@@ -176,14 +304,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const existingItem = (cart || []).find(it => it.name === itemName);
 
             if (existingItem) {
-                existingItem.qty = (existingItem.qty || 0) + quantity;
+                const newTotal = (existingItem.qty || 0) + quantity;
+                if (newTotal > maxStock) {
+                    alert(`Only ${maxStock} items left in stock.`);
+                    return;
+                }
+                existingItem.qty = newTotal;
+                // Update stored maxStock just in case
+                existingItem.maxStock = maxStock;
                 console.log('Existing item updated:', existingItem);
             } else {
+                if (quantity > maxStock) {
+                    alert(`Only ${maxStock} items left in stock.`);
+                    return;
+                }
                 const newItem = {
                     id: Date.now() + Math.random(),
                     name: itemName,
                     price: price,
-                    qty: quantity
+                    qty: quantity,
+                    maxStock: maxStock
                 };
                 cart.push(newItem);
                 console.log('New item added to cart:', newItem);
@@ -201,6 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.innerText = originalText;
                 btn.style.backgroundColor = '';
                 if (qtyInput) qtyInput.value = 1; // Reset qty after adding
+                fetchStockData(); // Refresh stock data to prevent stale display
             }, 1500);
         }
     });
@@ -313,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmBtn.onclick = () => {
                     confirmBtn.disabled = true;
                     confirmBtn.innerText = 'Processing...';
-                    
+
                     performCheckout(addressInput.value.trim(), confirmModal, confirmBtn);
                 };
             } else {
@@ -339,8 +480,8 @@ document.addEventListener('DOMContentLoaded', () => {
         })
             .then(response => response.json())
             .then(data => {
-                if(modal) modal.classList.remove('show');
-                if(btn) {
+                if (modal) modal.classList.remove('show');
+                if (btn) {
                     btn.disabled = false;
                     btn.innerText = 'Confirm Order';
                 }
@@ -370,12 +511,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveCart();
                 updateCartUI();
                 toggleCart();
+
+                // Immediately update stock on page
+                fetchStockData();
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Something went wrong. Please try again.');
-                if(modal) modal.classList.remove('show');
-                if(btn) {
+                if (modal) modal.classList.remove('show');
+                if (btn) {
                     btn.disabled = false;
                     btn.innerText = 'Confirm Order';
                 }

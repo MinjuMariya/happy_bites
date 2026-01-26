@@ -50,6 +50,7 @@ class StoreSettings(db.Model):
     facebook = db.Column(db.String(255), nullable=True)
     twitter = db.Column(db.String(255), nullable=True)
     whatsapp = db.Column(db.String(20), nullable=True)
+    linkedin = db.Column(db.String(255), nullable=True)
 
 class OrderItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -208,7 +209,21 @@ def logout():
     session.pop('user_logged_in', None)
     session.pop('username', None)
     session.pop('full_name', None)
+    session.pop('phone', None)
+    session.pop('address', None)
     return redirect(url_for('home'))
+
+@app.route('/my_orders')
+def my_orders():
+    if not session.get('user_logged_in'):
+        return redirect(url_for('login'))
+        
+    user = User.query.filter_by(username=session['username']).first()
+    if not user:
+        return redirect(url_for('login'))
+        
+    user_orders = Order.query.filter_by(user_id=user.id).order_by(Order.timestamp.desc()).all()
+    return render_template('my_orders.html', orders=user_orders)
 
 @app.route('/admin')
 def admin_dashboard():
@@ -339,6 +354,7 @@ def admin_settings():
                 settings.facebook = new_fb
                 settings.twitter = new_twitter
                 settings.whatsapp = new_whatsapp
+                settings.linkedin = request.form.get('linkedin')
                 db.session.commit()
                 success = "Store information updated successfully!"
             else:
@@ -418,7 +434,15 @@ def order():
             db.session.add(order_item)
     
     db.session.commit()
-    return jsonify({"status": "success", "message": "Order placed successfully!"})
+    
+    # Return updated stock for the ordered items
+    updated_stock = {}
+    for item in items:
+        p = Product.query.filter_by(name=item['name']).first()
+        if p:
+            updated_stock[p.id] = p.remaining_stock
+
+    return jsonify({"status": "success", "message": "Order placed successfully!", "updated_stock": updated_stock})
 
 @app.route('/admin/reports')
 def admin_reports():
@@ -596,11 +620,28 @@ def admin_products():
                 flash('Product deleted successfully!', 'success')
         
         db.session.commit()
+        if action == 'edit':
+             flash('Product updated successfully.', 'success')
         return redirect(url_for('admin_products'))
 
     all_products = Product.query.all()
     print(f"DEBUG: Found {len(all_products)} products to render")
     return render_template('admin_products.html', products=all_products, username=session.get('admin_username', 'admin'))
+
+@app.route('/api/products')
+def get_products_stock():
+    products = Product.query.all()
+    products_list = []
+    for p in products:
+        products_list.append({
+            'id': p.id,
+            'name': p.name,
+            'price': p.price,
+            'remaining_stock': p.remaining_stock,
+            'category': p.category,
+            'image_url': p.image_url
+        })
+    return jsonify(products_list)
 
 @app.route('/admin/api/stats')
 def admin_stats():
@@ -656,6 +697,19 @@ def feedback():
     
     print(f"Feedback Received - Rating: {rating} stars, Message: {message}")
     return jsonify({"status": "success", "message": "Feedback received!"})
+
+@app.route('/admin/feedback/delete/<int:id>', methods=['POST'])
+def delete_feedback(id):
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
+        
+    feedback = Feedback.query.get(id)
+    if feedback:
+        db.session.delete(feedback)
+        db.session.commit()
+        flash('Feedback deleted successfully!', 'success')
+    
+    return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

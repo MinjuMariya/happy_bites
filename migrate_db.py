@@ -24,6 +24,18 @@ def migrate():
             print("Migration successful: customer_address column added.")
         else:
             print("Column customer_address already exists.")
+
+        # Check for linkedin in store_settings
+        cursor.execute("PRAGMA table_info('store_settings')")
+        columns_settings = [info[1] for info in cursor.fetchall()]
+        
+        if 'linkedin' not in columns_settings:
+             print("Adding linkedin column to store_settings table...")
+             cursor.execute('ALTER TABLE "store_settings" ADD COLUMN linkedin TEXT')
+             conn.commit()
+             print("Migration successful: linkedin column added.")
+        else:
+             print("Column linkedin already exists in store_settings.")
             
     except Exception as e:
         print(f"Migration failed: {e}")

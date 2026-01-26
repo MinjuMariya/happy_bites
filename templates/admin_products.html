@@ -320,9 +320,9 @@
     {% if messages %}
     <div id="successModal" class="modal" style="display: block;">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🗑️</div>
+            <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
             {% for category, message in messages %}
-            <h2 style="color: #333;">Product Deleted</h2>
+            <h2 style="color: #333;">Success</h2>
             <p style="color: #666; margin-top: 0.5rem;">{{ message }}</p>
             {% endfor %}
             <button onclick="document.getElementById('successModal').style.display='none'" class="btn-primary"

@@ -75,6 +75,7 @@
                 {% if session.user_logged_in %}
                 <li><a href="#" class="nav-link" style="color: var(--primary);">Hi, {{ session.full_name.split()[0]
                         }}</a></li>
+                <li><a href="/my_orders" class="nav-link">My Orders</a></li>
                 <li><a href="/logout" class="nav-link">Logout</a></li>
                 {% else %}
                 <li><a href="/login" class="nav-link">Login</a></li>
@@ -123,7 +124,14 @@
                 <h3>{{ product.name }}</h3>
                 <p>{{ product.category|capitalize }} selection</p>
                 <div class="card-footer" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
-                    <span class="price" data-price="{{ product.price }}">Rs.{{ "%.2f"|format(product.price) }}</span>
+                    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                        <span class="price" data-price="{{ product.price }}">Rs.{{ "%.2f"|format(product.price)
+                            }}</span>
+                        {% if product.remaining_stock > 0 %}
+                        <span class="stock-info" style="font-size: 0.85rem; color: #e67e22; font-weight: 600;">Stock
+                            left: {{ product.remaining_stock }}</span>
+                        {% endif %}
+                    </div>
                     {% if product.remaining_stock > 0 %}
                     <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
                         <div class="qty-control">
@@ -204,17 +212,31 @@
             <div class="empty-cart-msg">Your cart is empty.</div>
         </div>
         <div class="cart-footer">
+            {% if session.user_logged_in %}
             <div class="cart-customer-details">
-                <input type="text" id="cart-name" placeholder="Your Name" class="cart-input"
-                    value="{{ session.full_name if session.user_logged_in else '' }}">
-                <input type="tel" id="cart-phone" placeholder="Phone Number" class="cart-input"
-                    value="{{ session.phone if session.user_logged_in else '' }}">
+                <p style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-light);">Delivering to:</p>
+                <input type="text" id="cart-address" placeholder="Delivery Address" class="cart-input"
+                    value="{{ session.address if session.address else '' }}">
             </div>
             <div class="cart-total">
                 <span>Total:</span>
                 <span class="total-amount">Rs.0.00</span>
             </div>
             <button class="btn btn-primary checkout-btn" disabled>Checkout</button>
+            {% else %}
+            <div class="cart-login-prompt"
+                style="text-align: center; padding: 1rem; background: #fdfaf7; border-radius: var(--radius); margin-bottom: 1rem;">
+                <p style="margin-bottom: 1rem; color: var(--text-dark);">Please login to place an order</p>
+                <a href="/login" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;">Login / Sign
+                    Up</a>
+            </div>
+            <div class="cart-total">
+                <span>Total:</span>
+                <span class="total-amount">Rs.0.00</span>
+            </div>
+            <button class="btn btn-primary checkout-btn" disabled style="opacity: 0.5; cursor: not-allowed;">Checkout
+                Restricted</button>
+            {% endif %}
         </div>
     </div>
     <div id="order-success-modal" class="custom-modal">

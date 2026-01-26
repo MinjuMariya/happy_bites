@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders | Happy Bites</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        .orders-container {
+            padding: 120px 20px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #eee;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .order-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .status-Pending {
+            background: #ffeeba;
+            color: #856404;
+        }
+
+        .status-Processing {
+            background: #b8daff;
+            color: #004085;
+        }
+
+        .status-Completed {
+            background: #c3e6cb;
+            color: #155724;
+        }
+
+        .status-Cancelled {
+            background: #f5c6cb;
+            color: #721c24;
+        }
+
+        .item-list {
+            margin-bottom: 1rem;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            font-size: 0.95rem;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar scrolled" id="navbar">
+        <div class="container nav-container">
+            <a href="/" class="logo">
+                <img src="static/assets/images/logo.jpeg" alt="Happy Bites Logo" class="logo-img">
+                <span class="logo-text">Happy Bites</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/menu" class="nav-link">Menu</a></li>
+                <li><a href="/feedbacks" class="nav-link">Feedbacks</a></li>
+                <li><a href="/my_orders" class="nav-link active">My Orders</a></li>
+                <li><a href="/logout" class="nav-link">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="orders-container">
+        <h1 class="section-title text-center">Your Order History</h1>
+        <p class="section-desc text-center" style="margin-bottom: 3rem;">Track your past treats and deliveries.</p>
+
+        {% if orders %}
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-header">
+                <div>
+                    <strong>Order #{{ order.id }}</strong>
+                    <div style="font-size: 0.85rem; color: #888;">{{ order.timestamp.strftime('%d %B %Y, %I:%M %p') }}
+                    </div>
+                </div>
+                <div>
+                    <span class="order-status status-{{ order.status }}">{{ order.status }}</span>
+                </div>
+            </div>
+
+            <div class="item-list">
+                {% for item in order.items %}
+                <div class="item-row">
+                    <span>{{ item.quantity }}x {{ item.name }}</span>
+                    <span>Rs.{{ "%.2f"|format(item.price) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="text-align: right; font-weight: bold; font-size: 1.1rem; color: var(--primary-dark);">
+                Total: {{ order.total }}
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center" style="padding: 3rem;">
+            <p style="font-size: 1.2rem; margin-bottom: 1rem;">You haven't placed any orders yet.</p>
+            <a href="/menu" class="btn btn-primary">Start Ordering</a>
+        </div>
+        {% endif %}
+    </div>
+
+</body>
+
+</html>

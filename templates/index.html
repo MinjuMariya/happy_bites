@@ -42,6 +42,7 @@
                 {% if session.user_logged_in %}
                 <li><a href="#" class="nav-link" style="color: var(--primary);">Hi, {{ session.full_name.split()[0]
                         }}</a></li>
+                <li><a href="/my_orders" class="nav-link">My Orders</a></li>
                 <li><a href="/logout" class="nav-link">Logout</a></li>
                 {% else %}
                 <li><a href="/login" class="nav-link">Login</a></li>
@@ -101,7 +102,14 @@
                 <h3>{{ product.name }}</h3>
                 <p>{{ product.category|capitalize }} selection</p>
                 <div class="card-footer" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
-                    <span class="price" data-price="{{ product.price }}">Rs.{{ "%.2f"|format(product.price) }}</span>
+                    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                        <span class="price" data-price="{{ product.price }}">Rs.{{ "%.2f"|format(product.price)
+                            }}</span>
+                        {% if product.remaining_stock > 0 %}
+                        <span class="stock-info" style="font-size: 0.85rem; color: #e67e22; font-weight: 600;">Stock
+                            left: {{ product.remaining_stock }}</span>
+                        {% endif %}
+                    </div>
                     {% if product.remaining_stock > 0 %}
                     <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
                         <div class="qty-control">
@@ -173,9 +181,10 @@
                 </div>
                 {% endfor %}
             </div>
-            <div style="text-align: center; margin-top: 3rem;">
-                <a href="/feedbacks" class="btn btn-secondary">See All Feedbacks</a>
-            </div>
+        </div>
+        <div style="text-align: center; margin-top: 3rem;">
+            <a href="/feedbacks" class="btn btn-secondary">See All Feedbacks</a>
+        </div>
         </div>
     </section>
     {% endif %}
@@ -200,6 +209,11 @@
                     {% if store_settings.twitter %}
                     <a href="{{ store_settings.twitter }}" target="_blank" class="social-icon" title="Twitter">
                         <i class="fab fa-twitter"></i>
+                    </a>
+                    {% endif %}
+                    {% if store_settings.linkedin %}
+                    <a href="{{ store_settings.linkedin }}" target="_blank" class="social-icon" title="LinkedIn">
+                        <i class="fab fa-linkedin-in"></i>
                     </a>
                     {% endif %}
                     {% if store_settings.whatsapp %}
