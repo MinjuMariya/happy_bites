@@ -165,6 +165,14 @@ def signup():
         if User.query.filter_by(email=email).first():
             return render_template('signup.html', error="Email already exists")
             
+        # Validate Phone Number (+91XXXXXXXXXX)
+        import re
+        # It should be +91 followed by 10 digits, starting with 6-9
+        phone_pattern = re.compile(r"^\+91[6-9]\d{9}$")
+        if not phone_pattern.match(phone):
+             return render_template('signup.html', error="Invalid Phone Number. Must be a valid Indian mobile number starting with 6, 7, 8, or 9.")
+
+            
         new_user = User(
             username=username,
             password=password,
@@ -230,8 +238,10 @@ def admin_dashboard():
     if not session.get('admin_logged_in'):
         return redirect(url_for('admin_login'))
     
-    # Get orders from database
+    # FETCH ALL ORDERS - ensuring no filters on status or user type
+    # Sort by Newest First
     db_orders = Order.query.order_by(Order.timestamp.desc()).all()
+    
     total_orders = Order.query.count()
     pending_orders = Order.query.filter_by(status='Pending').count()
     processing_orders = Order.query.filter_by(status='Processing').count()
@@ -262,15 +272,15 @@ def admin_dashboard():
     # Sort daily items by quantity
     top_selling_today = sorted(daily_items_sold.items(), key=lambda x: x[1], reverse=True)
     
-    # Format for template
+    # Format for template - include ALL orders
     formatted_orders = []
     for o in db_orders:
         formatted_orders.append({
             'id': o.id,
             'timestamp': o.timestamp.strftime("%Y-%m-%d %H:%M:%S") if o.timestamp else "N/A",
-            'customer_name': o.customer_name,
-            'customer_phone': o.customer_phone,
-            'customer_address': o.customer_address,
+            'customer_name': o.customer_name or "Unknown Guest",
+            'customer_phone': o.customer_phone or "",
+            'customer_address': o.customer_address or "", # Handle None address safely
             'items': [{'name': i.name, 'price': i.price, 'qty': getattr(i, 'quantity', 1)} for i in o.items],
             'total': o.total,
             'status': o.status

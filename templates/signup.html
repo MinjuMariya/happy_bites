@@ -143,8 +143,13 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" class="form-control" required
-                        placeholder="+1 234 567 890">
+                    <div class="phone-input-group">
+                        <span class="prefix-box">+91</span>
+                        <input type="tel" id="phone" name="phone_dummy" class="form-control phone-input" required
+                            placeholder="9876543210" maxlength="10" pattern="[6-9][0-9]{9}"
+                            title="Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9">
+                        <input type="hidden" id="full_phone" name="phone">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -173,6 +178,56 @@
             <p style="margin-top: 10px;"><a href="/" style="font-weight: 400; font-size: 0.9rem;">← Back to Home</a></p>
         </div>
     </div>
+    <div id="toast-notification" class="toast-notification">
+        <span class="toast-icon">⚠️</span>
+        <span id="toast-message">Enter a valid Indian mobile number.</span>
+    </div>
+
+    <script>
+        const phoneInput = document.getElementById('phone');
+        const fullPhoneInput = document.getElementById('full_phone');
+        const form = document.querySelector('form');
+        const toast = document.getElementById('toast-notification');
+
+        function showToast(msg) {
+            const toastMsg = document.getElementById('toast-message');
+            if (toastMsg) toastMsg.innerText = msg;
+            toast.classList.add('active');
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 3000);
+        }
+
+        // Allow click to dismiss
+        toast.addEventListener('click', () => {
+            toast.classList.remove('active');
+        });
+
+        // Real-time validation for 10 digits
+        phoneInput.addEventListener('input', (e) => {
+            // Remove any non-numeric characters
+            e.target.value = e.target.value.replace(/\D/g, '');
+
+            // Limit to 10 digits
+            if (e.target.value.length > 10) {
+                e.target.value = e.target.value.slice(0, 10);
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            const num = phoneInput.value;
+            const indianPhoneRegex = /^[6-9]\d{9}$/;
+
+            if (!indianPhoneRegex.test(num)) {
+                e.preventDefault();
+                showToast("Enter a valid Indian mobile number (10 digits starting with 6-9)");
+                phoneInput.focus();
+                return;
+            }
+
+            fullPhoneInput.value = "+91" + num;
+        });
+    </script>
 </body>
 
 </html>

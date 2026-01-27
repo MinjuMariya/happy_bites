@@ -273,12 +273,9 @@
                                     <td style="font-size: 0.9rem; color: #888;">{{ feedback.timestamp.strftime('%Y-%m-%d
                                         %H:%M') }}</td>
                                     <td>
-                                        <form action="/admin/feedback/delete/{{ feedback.id }}" method="POST"
-                                            onsubmit="return confirm('Are you sure you want to delete this feedback?');">
-                                            <button type="submit"
-                                                style="background: none; border: none; cursor: pointer; color: #dc3545;"
-                                                title="Delete">🗑️</button>
-                                        </form>
+                                        <button class="btn-delete-feedback" data-id="{{ feedback.id }}"
+                                            style="background: none; border: none; cursor: pointer; color: #dc3545; font-size: 1.2rem;"
+                                            title="Delete">🗑️</button>
                                     </td>
                                 </tr>
                                 {% else %}
@@ -291,8 +288,97 @@
                     </div>
                 </div>
             </div>
+            <!-- Admin Modals -->
+            <!-- Delete Confirmation Modal -->
+            <div id="delete-confirm-modal" class="admin-modal">
+                <div class="admin-modal-content">
+                    <span class="modal-icon">🗑️</span>
+                    <h3>Confirm Deletion</h3>
+                    <p>Are you sure you want to delete this feedback?</p>
+                    <div class="modal-actions">
+                        <button class="btn-secondary" id="cancel-delete">Cancel</button>
+                        <form id="delete-form" action="" method="POST" style="display: inline;">
+                            <button type="submit" class="btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toast Notification for Flash Messages -->
+            <div id="admin-toast" class="toast-notification">
+                <span class="toast-icon">✅</span>
+                <span id="toast-msg">Success Message</span>
+            </div>
+
         </main>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Success Toast Logic
+            const toast = document.getElementById('admin-toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = toast.querySelector('.toast-icon');
+
+            // Function to show toast
+            function showToast(message, category = 'success') {
+                toastMsg.innerText = message;
+                if (category === 'error') {
+                    toast.classList.add('error');
+                    toastIcon.innerText = '⚠️';
+                } else {
+                    toast.classList.remove('error');
+                    toastIcon.innerText = '✅';
+                }
+                toast.classList.add('active');
+                setTimeout(() => {
+                    toast.classList.remove('active');
+                }, 3000);
+            }
+
+            // Check for Flask Flash Messages
+            {% with messages = get_flashed_messages(with_categories = true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            showToast("{{ message }}", "{{ category }}");
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            // Delete Confirmation Logic
+            const deleteBtns = document.querySelectorAll('.btn-delete-feedback');
+            const deleteModal = document.getElementById('delete-confirm-modal');
+            const cancelBtn = document.getElementById('cancel-delete');
+            const deleteForm = document.getElementById('delete-form');
+
+            deleteBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const feedbackId = btn.dataset.id;
+                    // Update form action
+                    deleteForm.action = `/admin/feedback/delete/${feedbackId}`;
+                    deleteModal.classList.add('show');
+                });
+            });
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    deleteModal.classList.remove('show');
+                });
+            }
+
+            // Close modal on outside click
+            window.addEventListener('click', (e) => {
+                if (e.target === deleteModal) {
+                    deleteModal.classList.remove('show');
+                }
+            });
+
+            // Allow toast click to dismiss
+            toast.addEventListener('click', () => {
+                toast.classList.remove('active');
+            });
+        });
+    </script>
 </body>
 
 </html>
