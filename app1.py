@@ -408,55 +408,65 @@ def order():
         return jsonify({"status": "error", "message": "Please login to place an order"}), 401
         
     data = request.get_json()
+    print(f"DEBUG: Received Order Data: {data}")
     items = data.get('items')
     total = data.get('total')
     customer_data = data.get('customer', {})
     
     # Get user details from session/db
     user = User.query.filter_by(username=session['username']).first()
+    print(f"DEBUG: User found: {user.username if user else 'None'}")
     if not user:
         return jsonify({"status": "error", "message": "User not found"}), 404
 
-    new_order = Order(
-        customer_name=user.full_name,
-        customer_phone=user.phone,
-        customer_address=customer_data.get('address', user.address), # Use provided address or profile default
-        total=total or "Rs.0.00",
-        user_id=user.id
-    )
-    db.session.add(new_order)
-    db.session.flush() # Get the order ID
+    try:
+        new_order = Order(
+            customer_name=user.full_name,
+            customer_phone=user.phone,
+            customer_address=customer_data.get('address', user.address),
+            total=total or "Rs.0.00",
+            user_id=user.id
+        )
+        print(f"DEBUG: Creating new order for {user.full_name}")
+        db.session.add(new_order)
+        db.session.flush() 
+        print(f"DEBUG: Order created with ID: {new_order.id}")
 
-    if items:
-        for item in items:
-            qty = int(item.get('qty', 1))
-            # Update Stock
-            prod = Product.query.filter_by(name=item['name']).first()
-            if prod:
-                if prod.remaining_stock >= qty:
-                    prod.remaining_stock -= qty
-                else:
-                    qty_available = prod.remaining_stock
-                    prod.remaining_stock = 0
-                    print(f"WARNING: {prod.name} only had {qty_available} left!")
-            
-            # Extract price safely
-            item_price = 0.0
-            try:
-                price_str = str(item.get('price', '0')).replace('Rs.', '').replace('$', '').replace(',', '').strip()
-                item_price = float(price_str)
-            except (ValueError, TypeError):
-                pass
+        if items:
+            for item in items:
+                qty = int(item.get('qty', 1))
+                # Update Stock
+                prod = Product.query.filter_by(name=item['name']).first()
+                if prod:
+                    if prod.remaining_stock >= qty:
+                        prod.remaining_stock -= qty
+                    else:
+                        qty_available = prod.remaining_stock
+                        prod.remaining_stock = 0
+                        print(f"WARNING: {prod.name} only had {qty_available} left!")
+                
+                # Extract price safely
+                item_price = 0.0
+                try:
+                    price_str = str(item.get('price', '0')).replace('Rs.', '').replace('$', '').replace(',', '').strip()
+                    item_price = float(price_str)
+                except (ValueError, TypeError):
+                    pass
 
-            order_item = OrderItem(
-                order_id=new_order.id,
-                name=item['name'],
-                price=item_price,
-                quantity=qty
-            )
-            db.session.add(order_item)
-    
-    db.session.commit()
+                order_item = OrderItem(
+                    order_id=new_order.id,
+                    name=item['name'],
+                    price=item_price,
+                    quantity=qty
+                )
+                db.session.add(order_item)
+        
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR in order API: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
     
     # Return updated stock for the ordered items
     updated_stock = {}

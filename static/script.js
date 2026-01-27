@@ -548,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Something went wrong. Please try again.');
+                alert('Checkout failed: ' + (error.message || 'Server error. Please check if you are logged in and have items in cart.'));
                 if (modal) modal.classList.remove('show');
                 if (btn) {
                     btn.disabled = false;
