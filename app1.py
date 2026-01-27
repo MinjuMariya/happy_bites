@@ -14,7 +14,18 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = 'happy_secret_key'
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'happybites.db')
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'happybites.db')
+
+from urllib.parse import quote_plus
+
+# PostgreSQL Configuration
+DB_USERNAME = os.environ.get('DB_USERNAME', 'postgres')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'Aashnababu@22')
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_NAME = os.environ.get('DB_NAME', 'happybites')
+DB_PORT = os.environ.get('DB_PORT', '5432')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{DB_USERNAME}:{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -107,9 +118,11 @@ def seed_products():
                 p.price = p.price * 10
         db.session.commit()
 
-with app.app_context():
-    db.create_all()
-    seed_products()
+def init_db():
+    with app.app_context():
+        db.create_all()
+        seed_products()
+
 
 @app.context_processor
 def inject_settings():
@@ -743,4 +756,5 @@ def delete_feedback(id):
     return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
+    init_db()
     app.run(debug=True, port=5000)
